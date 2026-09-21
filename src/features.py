@@ -3,17 +3,30 @@
 Nothing here screens or models. It builds the columns the decisions settled on and
 labels which is which, so no downstream script has to remember.
 """
-import sys, pandas as pd, numpy as np
-sys.path.insert(0, "src"); import data as D
+
+from functools import lru_cache
+
+import numpy as np
+import pandas as pd
+
+import data as D
 
 # ---------------------------------------------------------------- decision 04
 # Clean on all five screening tests (see decisions/07).
-STRICT = ["first_engagement", "hs", "assists", "plants", "deaths", "creds_per_round"]
+#
+# `deaths` was here until decision 17 and is not any more. It passed every screening
+# test, but it is an OUTCOME -- the count of fights you lost -- and the rule the rest
+# of the set was chosen by is "count the situations, don't score the outcomes". It was
+# also near-redundant: adjusted for quality it correlates +.74 with first_engagement,
+# and dropping it moves every player by r = .987.
+STRICT = ["first_engagement", "hs", "assists", "plants", "creds_per_round"]
 
 # clutch_att: new-team stability .14 (interval includes 0), but role-independent
 # (R2 .110) and 80% unique. Junhee's construct -- last alive => baiting, or anchoring
-# and rotating late. Confirmed by 30 of 192 duelists clutching more than the average
-# sentinel. Kept; n=100 movers is too small to call .14 a null.
+# and rotating late. Confirmed by 32 of 203 duelists clutching more than the average
+# sentinel (diagnostics/role_labels.py independence). Kept, but see decisions/07: its
+# new-team stability is .009 on 104 movers, so it travels with the roster. STRICT drops
+# it and lands players in the same place (PC1 r .978), so nothing rests on the call.
 # decision 09: attack-minus-defend opening duels. Separates the entry duelist who
 # opens on attack from the aggressive defender. Only first_engagement has a persistent
 # side asymmetry (.458); the other splittable features' gaps are noise (.06-.16).
@@ -23,8 +36,13 @@ STYLE = STRICT + ["clutch_att"] + SIDED
 
 # No thresholds are applied anywhere. Verdicts are hand-written in decisions/07, and
 # Phase 4 is run under BOTH sets to show the choice is not load-bearing.
+# Empty since decision 07 closed: every candidate is now either in STYLE or in DROPPED.
+# Kept because steps 05, 08 and 09 print STYLE + PENDING, and it is the slot a new
+# candidate feature goes into while it is being screened.
 PENDING = []
 
+# Read by nothing; kept as the record of what was considered and rejected, in the
+# same file as what was kept, so the two cannot drift apart.
 DROPPED = {"econ":   "r with K/D high; vlr Econ is damage per 1000 credits, an "
                      "EFFICIENCY ratio, not spending. Replaced by creds_per_round.",
            "kast":   "r=+.45 with the K/D yardstick -- it tracks how good the player "
@@ -42,16 +60,18 @@ DROPPED = {"econ":   "r with K/D high; vlr Econ is damage per 1000 credits, an "
 # ---------------------------------------------------------------- decision 06
 QUALITY = "kd_ratio"     # a RATE, so fight volume cancels. See decisions/06.
 
-ALL = STRICT + ["clutch_att", "defuses", "kast", "econ", "acs", "adr"]
-# SIDED is appended in seasons(); defined above STYLE.   # non-STYLE kept as columns for reference
+# Everything averaged per season. Beyond STYLE + SIDED these are carried as columns
+# for reference and comparison only; nothing downstream models them. `deaths` moved
+# into this group in decision 17 -- still reported, no longer a feature.
+ALL = STRICT + ["clutch_att", "deaths", "defuses", "kast", "econ", "acs", "adr"]
 
 
 def pct(s):  # vlr writes percentages as '68%'
     return pd.to_numeric(s.astype(str).str.rstrip("%"), errors="coerce")
 
 
-def build() -> pd.DataFrame:
-    """Per player-map rows with every candidate feature and the map result attached."""
+@lru_cache(maxsize=None)
+def _build() -> pd.DataFrame:
     ov = D.overview()
     ov = ov[ov.Side == "both"].copy()
     for c in ["Kills","Deaths","Assists","First Kills","First Deaths","Rating",
@@ -84,6 +104,14 @@ def build() -> pd.DataFrame:
     return d.merge(side_gaps(), on=D.MATCH + ["Map", "player_id"], how="left")
 
 
+def build() -> pd.DataFrame:
+    """Per player-map rows with every candidate feature and the map result attached.
+
+    Cached, because several scripts rebuild it repeatedly in one run. The copy keeps
+    callers that add columns from corrupting the shared frame."""
+    return _build().copy()
+
+
 def side_gaps() -> pd.DataFrame:
     """attack-minus-defend opening duels, per player-MAP.  decision 09.
 
@@ -104,7 +132,7 @@ def map_results() -> pd.DataFrame:
     """Did the player's team win this map? Used for team strength, and as an
     independent quality check that cannot be padded by individual stats."""
     ms = D._stack("maps_scores")
-    ms = ms[ms.Map != "All Maps"]
+    ms = ms[ms.Map != "All Maps"].copy()
     for c in ["Team A Score", "Team B Score"]:
         ms[c] = pd.to_numeric(ms[c], errors="coerce")
     return pd.concat([

@@ -12,10 +12,13 @@ Two layers, deliberately:
                    input to the model -- it exists so results are readable:
                    "a duelist who plays like a sentinel".
 """
-import sys, pandas as pd, numpy as np, statsmodels.api as sm
-sys.path.insert(0, "src")
+
+import numpy as np, statsmodels.api as sm
+import pandas as pd
+
 import features as F
-from step11_role_independence import ROLE, with_role
+import paths
+from roles import with_role
 
 
 def residualize(ps: pd.DataFrame, cols, covariate: str = None) -> pd.DataFrame:
@@ -49,8 +52,8 @@ def build(feature_set=None) -> pd.DataFrame:
                   team=("Team", lambda s: s.mode().iat[0]),
                   region=("region", lambda s: s.mode().iat[0])))
     ps = ps.merge(lab, on=["player_id", "year"], how="left")
-    keys = ["player_id", "handle", "year", "team", "region", "role", "main_agent",
-            "maps", F.QUALITY, "team_win"]
+    keys = ["player_id", "handle", "year", "team", "region", "role", "role_share",
+            "main_agent", "maps", F.QUALITY, "team_win"]
     return pd.concat([ps[keys], S, W], axis=1).dropna(subset=cols)
 
 
@@ -61,8 +64,9 @@ if __name__ == "__main__":
         q = S[cols].corrwith(S[F.QUALITY]).abs()
         print(f"  residual |r| with quality: mean {q.mean():.3f}  max {q.max():.3f} ({q.idxmax()})")
         if name == "STYLE":
-            S.to_parquet("data/interim/style_matrix.parquet")
-            print("  wrote data/interim/style_matrix.parquet\n")
+            paths.INTERIM.mkdir(parents=True, exist_ok=True)
+            S.to_parquet(paths.INTERIM / "style_matrix.parquet")
+            print(f"  wrote {paths.INTERIM/'style_matrix.parquet'}\n")
             show = ["handle","year","team","role","main_agent",
                     "first_engagement","clutch_att","first_engagement_gap"]
             def block(title, df):

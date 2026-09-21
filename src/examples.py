@@ -6,29 +6,31 @@ label must not be WRONG (modal agent's role == modal role) and must not be WEAK
 ~43% of a player's maps, so an unguarded "an X who plays like a Y" claim can just be
 a mislabelled Y.
 """
-import sys, numpy as np, pandas as pd
-sys.path.insert(0, "src")
+
+import pandas as pd
+
 import features as F
 from components import loadings
-from step11_role_independence import ROLE
-from step13_label_validity import shares
+from roles import ROLES, shares
 
-ROLES = ["duelist", "initiator", "controller", "sentinel"]
 MIN_ROLE_SHARE = .70
 
 
 def guarded():
-    """Player-seasons whose role label is safe to cite, with within-role positions."""
+    """Player-seasons whose role label is safe to cite, with within-role positions.
+
+    The guard is one condition now: did the player actually spend most of the season
+    in the role they are labelled with. It used to be two, because `role` was the role
+    of the single most-played AGENT and could disagree with the role the player
+    actually played most -- so the first condition tested those two against each
+    other. `role` IS the modal role now, and that comparison no longer means anything.
+    """
     M, L, sc = loadings(F.STYLE)
     D = pd.concat([M[["player_id", "year", "handle", "team", "region", "role",
-                      "main_agent"]], sc], axis=1)
+                      "role_share", "main_agent"]], sc], axis=1)
     P = shares()
-    P["role_of_modal_agent"] = P.main.str.lower().map(ROLE)
-    P["modal_role"] = P[ROLES].idxmax(axis=1)
-    P["role_share"] = P[ROLES].max(axis=1)
-    D = D.merge(P[["player_id", "year", "role_of_modal_agent", "modal_role",
-                   "role_share"] + ROLES], on=["player_id", "year"], how="left")
-    D["label_ok"] = (D.role_of_modal_agent == D.modal_role) & (D.role_share >= MIN_ROLE_SHARE)
+    D = D.merge(P[["player_id", "year"] + ROLES], on=["player_id", "year"], how="left")
+    D["label_ok"] = D.role_share >= MIN_ROLE_SHARE
     for c in ("PC1", "PC2"):                       # position within the player's own role
         g = D.groupby("role")[c]
         D[c + "_inrole"] = (D[c] - g.transform("mean")) / g.transform("std")

@@ -1,0 +1,58 @@
+  <section id="vExplore" role="tabpanel" aria-labelledby="tabExplore">
+    <div class="xhead">
+      <p class="lede">Every VALORANT Champions Tour player-season from 2023 to 2026, placed on
+      two measured style dimensions. <b>Riot's four-way role taxonomy recovers exactly one of
+      them</b> &mdash; whether you are a duelist. Among the 570 non-duelist seasons, role explains
+      11% of where a player sits.</p>
+      <p class="meta">775 player-seasons &middot; 400 players &middot;
+      franchised play only &middot; data snapshot 2026-09-19</p>
+    </div>
+
+    <div class="bar">
+      <div class="grp"><span>Role</span><div class="chips" id="fRole"></div></div>
+      <div class="grp"><span>Season</span><div class="chips" id="fYear"></div></div>
+      <div class="grp"><span>Region</span><div class="chips" id="fRegion"></div></div>
+      <div class="grp grow"><span>Find a player or team</span>
+        <input type="search" id="q" placeholder="aspas, paper rex, leviat&aacute;n&hellip;"
+               autocomplete="off"></div>
+      <div class="count" id="count"></div>
+    </div>
+
+    <div class="stage">
+      <div>
+        <div class="plot" id="plot">
+          <svg id="chart" viewBox="0 0 760 560" role="img"
+               aria-label="Aggression against isolation for 775 player-seasons"></svg>
+          <div class="tip" id="tip" aria-hidden="true"></div>
+        </div>
+        <div class="legend">
+          <span><span class="swatch" style="background:var(--blue)"></span>not a duelist</span>
+          <span><span class="swatch" style="background:var(--orange)"></span>duelist</span>
+          <span class="hint">hover a point &middot; click to pin</span>
+        </div>
+        <div class="axkey">
+        <div>
+          <b>Aggression &rarr;</b> opening duels taken, deaths and credits spent, against
+          assists, spike plants and clutches. Bottom fifth to top fifth:
+          2.8 &rarr; 6.8 duels per map.
+        </div>
+        <div>
+          <b>&uarr; Isolation / gunplay</b> 23.5% &rarr; 33.7% headshots, assists
+          7.5 &rarr; 5.0, spike plants halved. This axis is <b>marginal</b> &mdash;
+          see the report.
+        </div>
+        <p class="fine">One point is one player-season, averaged across every agent they
+        played &mdash; a player uses five in a median season. Role averages count only
+        players with at least 70% of their maps in that role.</p>
+        </div>
+      </div>
+      <div class="side">
+        <div class="card" id="detail">
+          <div class="dbody">
+            <h2>Selected player</h2>
+            <p class="empty">Click any point to see that player-season against their role's average.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>

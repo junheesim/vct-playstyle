@@ -18,10 +18,13 @@ because the features are skewed -- plants .97, first_engagement_gap 1.78 -- so a
 normal null would assume something untrue. The normal null is reported alongside as
 a check.)
 """
-import sys, numpy as np, pandas as pd
-sys.path.insert(0, "src")
-import features as F, style as S
+
+import numpy as np
+import pandas as pd
 from sklearn.decomposition import PCA
+
+import features as F, style as S, pca
+import paths
 
 N_DRAWS = 500
 
@@ -46,8 +49,12 @@ def null_cutoffs(X: np.ndarray, kind: str = "shuffle", n: int = N_DRAWS, pct: in
 def replication(X: np.ndarray, pid: np.ndarray, n: int = 200):
     """Fit PCA on two halves; how much do the components agree?
     A component that does not reproduce on half the data is not a finding.
-    Halves are split by PLAYER, not by row -- 726 rows come from 381 players, and a
-    row-wise split leaks the same player into both halves."""
+    Halves are split by PLAYER, not by row -- 775 rows come from 400 players, and a
+    row-wise split leaks the same player into both halves.
+
+    Component k in one half is compared with component k in the other. If the two
+    halves order two near-equal components differently, that pair reads as a failure
+    to replicate, so this understates agreement for the weaker components."""
     rng = np.random.default_rng(0)
     out = []
     for _ in range(n):
@@ -87,21 +94,14 @@ def report(cols=None, label="STYLE"):
 
 
 def loadings(cols, k=2):
-    """What each retained component is MADE OF."""
+    """The style matrix, what each retained component is MADE OF, and the scores.
+
+    Loadings and scores come out of `pca.fit` under one sign convention, so they
+    cannot disagree about which direction PC1 points."""
     M = S.build(cols)
-    Z = (M[cols] - M[cols].mean()) / M[cols].std()
-    pca = PCA(n_components=k).fit(Z.values)
-    L = pd.DataFrame(pca.components_.T, index=cols,
-                     columns=[f"PC{i+1}" for i in range(k)])
-    # sign convention: make PC1 point toward more first_engagement
-    for c in L.columns:
-        if L.loc["first_engagement", c] < 0 if c == "PC1" else False:
-            L[c] *= -1
-    scores = pd.DataFrame(pca.transform(Z.values), index=M.index,
-                          columns=L.columns)
-    if L.loc["first_engagement", "PC1"] < 0:
-        L["PC1"] *= -1; scores["PC1"] *= -1
-    return M, L, scores
+    Z = pca.standardise(M, cols)
+    model, flip = pca.fit(Z.values, cols, k)
+    return M, pca.loadings(model, flip, cols), pca.scores(model, flip, Z, M.index)
 
 
 if __name__ == "__main__":
@@ -116,5 +116,6 @@ if __name__ == "__main__":
 
     M, L, sc = loadings(F.STYLE)
     out = pd.concat([M[["handle","year","team","region","role","main_agent"]], sc], axis=1)
-    out.to_parquet("data/interim/style_scores.parquet")
-    print(f"\n  wrote data/interim/style_scores.parquet  {out.shape}")
+    paths.INTERIM.mkdir(parents=True, exist_ok=True)
+    out.to_parquet(paths.INTERIM / "style_scores.parquet")
+    print(f"\n  wrote {paths.INTERIM/'style_scores.parquet'}  {out.shape}")

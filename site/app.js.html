@@ -1,0 +1,282 @@
+<script>
+const NS="http://www.w3.org/2000/svg";
+const svg=document.getElementById("chart"), tip=document.getElementById("tip"),
+      plot=document.getElementById("plot"), detail=document.getElementById("detail"),
+      countEl=document.getElementById("count"), q=document.getElementById("q");
+const W=760,H=560,M={t:22,r:22,b:46,l:52};
+const ROLES=["duelist","initiator","controller","sentinel"];
+const YEARS=[2023,2024,2025,2026];
+// Four leagues. "International" used to appear here because region was read off
+// the tournament name, so Masters and Champions -- a TIER -- became a fifth region.
+const REGIONS=["Americas","EMEA","Pacific","China"];
+// Units live on the row, because the last two are not per-map: K/D is a season ratio
+// and damage is per round. A single "average per map" header over all eight was wrong.
+const FIELDS=[["fe","opening duels/map"],["d","deaths/map"],["as","assists/map"],
+              ["pl","spike plants/map"],["cl","clutches/map"],["hs","headshot %"],
+              ["kd","K/D, season"],["adr","damage/round"]];
+const state={role:new Set(),year:new Set(),region:new Set(),q:"",pinned:null};
+
+function chips(host,items,key,fmt){
+  host.innerHTML="";
+  items.forEach(v=>{
+    const b=document.createElement("button");
+    b.className="chip"; b.type="button"; b.textContent=fmt?fmt(v):v;
+    b.setAttribute("aria-pressed","false");
+    b.onclick=()=>{ const s=state[key];
+      s.has(v)?s.delete(v):s.add(v);
+      b.setAttribute("aria-pressed",s.has(v)?"true":"false"); applyFilter(); };
+    host.appendChild(b);
+  });
+}
+chips(document.getElementById("fRole"),ROLES,"role");
+chips(document.getElementById("fYear"),YEARS,"year");
+chips(document.getElementById("fRegion"),REGIONS,"region");
+// Fold case and accents: three names in the data carry diacritics (LEVIAT\u00c1N,
+// KR\u00dc Esports, ros\u00e9) and nobody types them.
+const fold=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+q.oninput=()=>{ state.q=fold(q.value.trim()); applyFilter(); };
+
+const xs=DATA.map(d=>d.x), ys=DATA.map(d=>d.z);
+const xd=[Math.min(...xs)-.5,Math.max(...xs)+.5], yd=[Math.min(...ys)-.4,Math.max(...ys)+.4];
+const sx=v=>M.l+(v-xd[0])/(xd[1]-xd[0])*(W-M.l-M.r);
+const sy=v=>H-M.b-(v-yd[0])/(yd[1]-yd[0])*(H-M.t-M.b);
+const ticks=(a,b,step)=>{const o=[];for(let v=Math.ceil(a/step)*step;v<=b;v+=step)o.push(+v.toFixed(6));return o;};
+
+function el(n,at,par){const e=document.createElementNS(NS,n);
+  for(const k in at)e.setAttribute(k,at[k]); (par||svg).appendChild(e); return e;}
+
+function visible(d){
+  if(state.role.size&&!state.role.has(d.r))return false;
+  if(state.year.size&&!state.year.has(d.y))return false;
+  if(state.region.size&&!state.region.has(d.g))return false;
+  if(state.q&&!(fold(d.h).includes(state.q)||fold(d.t).includes(state.q)))return false;
+  return true;
+}
+// role averages use only players whose role label is solid (>=70% of maps in that
+// role). Part-time players labelled by their single most-played agent would otherwise
+// drag the average: 54 "duelists" fail that test and take 5.4 opening duels, against
+// 6.9 for the 149 who actually play the role.
+const avgOf=(r,f)=>{const v=DATA.filter(d=>d.r===r&&d.ok&&d[f]!=null).map(d=>d[f]);
+  return v.reduce((a,b)=>a+b,0)/v.length;};
+
+const mixText=(mx,n)=>mx.slice(0,n||3).map(([a,c])=>"<b>"+a+"</b> "+c).join("  ");
+function mixBars(d){
+  const tot=d.mx.reduce((a,b)=>a+b[1],0);
+  return '<div class="mix">'+d.mx.map(([a,c],i)=>
+    '<div class="mixrow"><span class="ma">'+a+'</span>'+
+    '<span class="mb"><i style="--w:'+(c/tot*100).toFixed(1)+'%;--i:'+i+'"></i></span>'+
+    '<span class="mc">'+c+"</span></div>").join("")+"</div>";
+}
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Swapping innerHTML is instantaneous and the card's height jumps with the agent
+// count (1 to 13 rows), so a pin used to snap. Fade the old content out, swap, then
+// animate the box to its new height while the new content fades in. The explicit
+// height is cleared afterwards so the card stays fluid.
+// Swapping the panel is instant. What animates is the agent mix.
+//
+// Bars are matched BY ROW, not by agent: row 1 of the outgoing player becomes row 1
+// of the incoming one, so a bar that exists in both simply moves to its new length.
+// Only rows the previous player did not have start at zero and fill left to right,
+// and those are the ones that cascade.
+function swapDetail(html){
+  // Measured, not the previous target, so a swap during an animation continues from
+  // wherever the bars actually are rather than jumping.
+  const prev = [...detail.querySelectorAll(".mixrow")].map(r=>{
+    const track = r.querySelector(".mb").getBoundingClientRect().width;
+    return track ? r.querySelector(".mb i").getBoundingClientRect().width / track * 100 : 0;
+  });
+
+  detail.innerHTML = '<div class="dbody">' + html + "</div>";
+  const mix = detail.querySelector(".mix");
+  if(!mix) return;
+  const bars = [...mix.querySelectorAll(".mb i")];
+  if(REDUCED){ mix.classList.add("go"); return; }
+
+  // `.go` first, so the cascade target is the real width; the inline width then
+  // overrides it with the starting point, and releasing it runs the transition.
+  mix.classList.add("go");
+  bars.forEach((bar,i)=>{
+    const carried = i < prev.length;
+    bar.style.width = carried ? prev[i].toFixed(2)+"%" : "0%";
+    bar.style.transitionDelay = carried ? "0ms"
+      : Math.min((i - prev.length) * 38, 300) + "ms";
+  });
+  void mix.offsetWidth;
+  bars.forEach(bar=>{ bar.style.width = ""; });
+}
+
+function showDetail(d){
+  if(!d){swapDetail('<h2>Selected player</h2><p class="empty">Click any point to see that '+
+    "player-season against their role's average.</p>"); return;}
+  const pill=d.r==="duelist"?'<span class="pill duel">duelist</span>':
+             '<span class="pill nd">'+d.r+"</span>";
+  // The third column is signed, and deliberately NOT coloured: above the role average
+  // is not "good" for deaths, so a red/green reading would assert something false.
+  let rows='<div class="rows four"><span class="hd">season average</span>'+
+           '<span class="hd v">player</span>'+
+           '<span class="hd r">role avg</span>'+
+           '<span class="hd r">vs role</span>';
+  FIELDS.forEach(([f,lab])=>{ if(d[f]==null)return;
+    const dp = f==="kd"?2:1, avg = avgOf(d.r,f), diff = d[f]-avg;
+    const sign = diff>=0 ? "+" : "\u2212";
+    rows+='<span class="k">'+lab+'</span>'+
+          '<span class="v">'+d[f].toFixed(dp)+'</span>'+
+          '<span class="r">'+avg.toFixed(dp)+'</span>'+
+          '<span class="d">'+sign+Math.abs(diff).toFixed(dp)+'</span>'; });
+  rows+="</div>";
+  swapDetail('<h2>Selected player</h2><p class="who">'+d.h+"</p>"+
+    '<p class="whosub">'+d.y+" &middot; "+d.t+" &middot; "+d.m+" maps &nbsp;"+pill+"</p>"+
+    '<h2 style="margin-top:14px">Agents played</h2>'+mixBars(d)+
+    // Where the role label comes from, in this player's own numbers. It is the
+    // roll-up of the bars directly above it, which is the whole derivation.
+    // The share is floored from the exact counts, not read from the rounded `rs`:
+    // floor(rc/m*100) >= 70 is exactly the guard, so the figure shown and the
+    // "thin label" note can never contradict each other. iamgrq 2026 is 69.57%,
+    // which rounds to 70% but must not read as passing.
+    '<p class="caveat"><b>Role</b> is the one played on the most maps, counting every '+
+    "map by the agent picked: <b>"+d.r+"</b> on "+d.rc+" of "+d.m+" ("+
+    Math.floor(d.rc/d.m*100)+"%)."+
+    (d.ok ? "" : " Under 70%, so this label is thin \u2014 the report does not cite "+
+      "players below that line.")+"</p>"+
+    '<p class="caveat">Every figure below is this player\u2019s whole season, across all '+
+    "of these agents \u2014 not their numbers on any one of them.</p>"+rows+
+    '<div class="rows" style="grid-template-columns:1fr auto;margin-top:12px;'+
+    'padding-top:10px;border-top:1px solid var(--line)">'+
+    '<span class="k">aggression</span><span class="v">'+d.x.toFixed(2)+"</span>"+
+    '<span class="k">isolation</span><span class="v">'+d.z.toFixed(2)+"</span></div>");
+}
+
+// The chart is built ONCE and filters mutate the existing circles, so the browser
+// can transition r and fill-opacity. Rebuilding the SVG on every filter change (the
+// earlier approach) gives nothing to animate between.
+let DOTS=null, PIN=null;
+
+function buildChart(){
+  svg.innerHTML=""; DOTS=[];
+  const cs=getComputedStyle(document.body);
+  const ink=cs.getPropertyValue("--ink-3").trim(), line=cs.getPropertyValue("--line").trim(),
+        blue=cs.getPropertyValue("--blue").trim(), orange=cs.getPropertyValue("--orange").trim();
+
+  ticks(xd[0],xd[1],2).forEach(v=>{
+    el("line",{x1:sx(v),x2:sx(v),y1:M.t,y2:H-M.b,stroke:line,"stroke-width":1});
+    el("text",{x:sx(v),y:H-M.b+18,fill:ink,"font-size":11,"text-anchor":"middle",
+      "font-family":"IBM Plex Mono, monospace"}).textContent=v;
+  });
+  ticks(yd[0],yd[1],1).forEach(v=>{
+    el("line",{x1:M.l,x2:W-M.r,y1:sy(v),y2:sy(v),stroke:line,"stroke-width":1});
+    el("text",{x:M.l-9,y:sy(v)+4,fill:ink,"font-size":11,"text-anchor":"end",
+      "font-family":"IBM Plex Mono, monospace"}).textContent=v;
+  });
+  el("text",{x:M.l+(W-M.l-M.r)/2,y:H-8,fill:ink,"font-size":12,"text-anchor":"middle"})
+    .textContent="aggression \u2192";
+  el("text",{x:14,y:M.t+(H-M.t-M.b)/2,fill:ink,"font-size":12,"text-anchor":"middle",
+    transform:"rotate(-90 14 "+(M.t+(H-M.t-M.b)/2)+")"}).textContent="isolation / gunplay \u2192";
+
+  PIN=el("circle",{cx:0,cy:0,r:9,fill:"none",
+    stroke:cs.getPropertyValue("--ink").trim(),"stroke-width":2,opacity:0,
+    class:"pinring","pointer-events":"none"});
+
+  DATA.forEach(d=>{
+    // set the resting values at creation -- a fade-in from zero would leave the
+    // first frame (and any thumbnail) mid-animation
+    const on=visible(d);
+    const c=el("circle",{cx:sx(d.x),cy:sy(d.z),r:on?4.2:2.4,
+      fill:d.r==="duelist"?orange:blue,
+      "fill-opacity":on?(d.r==="duelist"?.72:.6):.05,stroke:"none",class:"dot"});
+    c.addEventListener("pointerenter",e=>{
+      if(!visible(d))return;
+      c.classList.add("hot");
+      tip.innerHTML="<b>"+d.h+"</b> &middot; "+d.y+
+        '<span class="m">'+d.t+" &middot; "+d.r+"</span>"+
+        '<span class="m">'+mixText(d.mx,3)+(d.mx.length>3?"  <b>+"+(d.mx.length-3)+"</b>":"")+"</span>"+
+        '<span class="m">'+d.fe.toFixed(1)+" opening duels &middot; "+d.d.toFixed(1)+
+          " deaths &middot; <i>per map</i></span>";
+      const b=plot.getBoundingClientRect();
+      // Place the tip clear of the pointer. Near the right edge it flips to the
+      // LEFT of the cursor rather than sliding under it, which is what happened
+      // when it was only clamped to the plot's width.
+      tip.classList.add("on");
+      const px=e.clientX-b.left, py=e.clientY-b.top, PAD=14,
+            tw=tip.offsetWidth, th=tip.offsetHeight;
+      let lx = px+PAD;
+      if(lx+tw > b.width-6) lx = px-PAD-tw;        // flip to the left
+      lx = Math.max(6, Math.min(lx, b.width-tw-6));
+      let ty = py-th-PAD;                           // above the cursor
+      if(ty < 6) ty = py+PAD;                       // below it if there is no room
+      ty = Math.max(6, Math.min(ty, b.height-th-6));
+      tip.style.left=lx+"px";
+      tip.style.top=ty+"px";
+    });
+    c.addEventListener("pointerleave",()=>{
+      c.classList.remove("hot"); tip.classList.remove("on");
+    });
+    c.addEventListener("click",()=>{ if(!visible(d))return;
+      state.pinned=d; showDetail(d); applyFilter(); });
+    DOTS.push([c,d]);
+  });
+}
+
+function applyFilter(){
+  let shown=0;
+  DOTS.forEach(([c,d])=>{
+    const on=visible(d); if(on)shown++;
+    c.setAttribute("r",on?4.2:2.4);
+    c.setAttribute("fill-opacity",on?(d.r==="duelist"?.72:.6):.05);
+    c.style.pointerEvents=on?"auto":"none";
+  });
+  const p=state.pinned;
+  if(p&&visible(p)){
+    PIN.setAttribute("cx",sx(p.x)); PIN.setAttribute("cy",sy(p.z));
+    PIN.setAttribute("opacity",1);
+  } else PIN.setAttribute("opacity",0);
+  countEl.textContent=shown===DATA.length?DATA.length+" player-seasons"
+    :shown+" of "+DATA.length+" shown";
+}
+
+function draw(){ buildChart(); applyFilter(); }
+
+draw();
+showDetail(DATA.find(d=>d.h==="aspas"&&d.y===2024)||null);
+state.pinned=DATA.find(d=>d.h==="aspas"&&d.y===2024)||null;
+draw();
+matchMedia("(prefers-color-scheme:dark)").addEventListener("change",draw);
+
+// ---- view switching ----
+const views={Explore:["tabExplore","vExplore"],Report:["tabReport","vReport"]};
+const wrap=document.querySelector(".wrap");
+let CURRENT=null;
+
+function show(v){
+  if(CURRENT===v) return;
+  CURRENT = v;
+  for(const k in views){
+    const [tb,pn]=views[k], on=(k===v);
+    document.getElementById(tb).setAttribute("aria-selected",on?"true":"false");
+    document.getElementById(pn).hidden=!on;
+  }
+  window.scrollTo({top:0,behavior:"instant"});
+  try{localStorage.setItem("vct.view",v)}catch(e){}
+  // Keep the URL in step, so #report is a real link someone can send or bookmark.
+  const h = v==="Report" ? "#report" : "#explore";
+  if(location.hash!==h) history.replaceState(null,"",h);
+  if(v==="Explore") draw();
+}
+
+document.getElementById("tabExplore").onclick=()=>show("Explore");
+document.getElementById("tabReport").onclick=()=>show("Report");
+const te=document.getElementById("toExplore2");
+if(te)te.onclick=e=>{e.preventDefault();show("Explore")};
+// The hash wins if there is one -- a shared link should land where it says --
+// otherwise fall back to whichever view this reader saw last.
+let start="Explore";
+try{ if(localStorage.getItem("vct.view")==="Report")start="Report"; }catch(e){}
+if(location.hash==="#report")start="Report";
+if(location.hash==="#explore")start="Explore";
+addEventListener("hashchange",()=>{
+  const v = location.hash==="#report" ? "Report" : "Explore";
+  if(document.getElementById(views[v][1]).hidden) show(v);
+});
+show(start);
+</script>
+

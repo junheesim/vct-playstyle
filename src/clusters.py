@@ -15,13 +15,14 @@ Two checks, the same pair used throughout this project:
                arbitrary cut of a cloud still replicates at .29-.45, so the real
                number is meaningless without this baseline.
 """
-import sys, numpy as np, pandas as pd
-sys.path.insert(0, "src")
-import features as F
-from components import loadings
+
+import numpy as np
 from sklearn.cluster import KMeans
-from sklearn.mixture import GaussianMixture
 from sklearn.metrics import adjusted_rand_score as ari
+from sklearn.mixture import GaussianMixture
+
+import features as F, pca
+from components import loadings
 
 KS = range(2, 9)
 
@@ -32,7 +33,7 @@ def replication(X, k, pid, model="kmeans", n=40, seed=0):
           else (lambda d: GaussianMixture(k, n_init=1, random_state=0).fit(d))
     out = []
     for _ in range(n):
-        # split by PLAYER, not by row: 726 rows come from 381 players, and a row-wise
+        # split by PLAYER, not by row: 775 rows come from 400 players, and a row-wise
         # split leaks the same player into both halves.
         ps = rng.permutation(np.unique(pid)); h = set(ps[:len(ps)//2])
         m = np.array([p in h for p in pid]); a, b = np.where(m)[0], np.where(~m)[0]
@@ -62,5 +63,5 @@ if __name__ == "__main__":
     M, L, sc = loadings(F.STYLE)
     pid = M.player_id.values
     report(sc[["PC1","PC2"]].values, pid, "STYLE, 2 components")
-    Zf = ((M[F.STYLE]-M[F.STYLE].mean())/M[F.STYLE].std()).values
-    report(Zf, pid, "STYLE, all 8 raw features")
+    Zf = pca.standardise(M, F.STYLE).values
+    report(Zf, pid, f"STYLE, all {len(F.STYLE)} raw features")

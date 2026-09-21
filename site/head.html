@@ -1,0 +1,217 @@
+<title>VCT Playstyle</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --ground:#f7f8fa; --surface:#ffffff; --sunken:#eef1f5;
+  --ink:#12151a; --ink-2:#555f6d; --ink-3:#8d97a5;
+  --line:#dfe4ea; --line-2:#c8cfd9;
+  --blue:#2a78d6; --orange:#eb6834;
+  --blue-soft:#2a78d629; --orange-soft:#eb683429;
+  --focus:#2a78d6;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --ground:#11141a; --surface:#181c24; --sunken:#1e232c;
+  --ink:#f2f4f7; --ink-2:#a7b1c0; --ink-3:#6f7987;
+  --line:#272d38; --line-2:#37404e;
+  --blue:#3987e5; --orange:#d95926;
+  --blue-soft:#3987e533; --orange-soft:#d9592633; --focus:#3987e5;
+}}
+:root[data-theme="dark"]{
+  --ground:#11141a; --surface:#181c24; --sunken:#1e232c;
+  --ink:#f2f4f7; --ink-2:#a7b1c0; --ink-3:#6f7987;
+  --line:#272d38; --line-2:#37404e;
+  --blue:#3987e5; --orange:#d95926;
+  --blue-soft:#3987e533; --orange-soft:#d9592633; --focus:#3987e5;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);margin:0;line-height:1.62;
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px;padding-block:32px 56px}
+.col{max-width:70ch}
+/* The report is a centred reading column; figures and wide tables break out.
+   Left-aligning a 70ch column inside a 1120px wrapper leaves dead space beside it. */
+#vReport{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center}
+#vReport>*{width:100%;max-width:730px}          /* one reading edge for every block */
+#vReport .sec .col{max-width:none}               /* nested .col fills its section;
+   the selector is scoped to .sec so it does not outrank the rule above and let the
+   page header escape the reading column */
+h1{font-size:clamp(24px,4.6vw,34px);font-weight:600;letter-spacing:-.02em;margin:0 0 10px;text-wrap:balance}
+h2{font-size:clamp(17px,2.6vw,21px);font-weight:600;letter-spacing:-.01em;margin:0 0 4px;text-wrap:balance}
+h3{font-size:14px;font-weight:600;margin:0 0 8px}
+.sec{margin-top:52px;padding-top:28px;border-top:1px solid var(--line)}
+.sec:first-of-type{border-top:0}
+.eyebrow{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);
+  font-weight:600;margin:0 0 8px;font-family:"IBM Plex Mono",monospace}
+p{margin:0 0 14px}
+.lede{font-size:clamp(15px,2.1vw,17px);color:var(--ink-2)}
+.lede b,p b{color:var(--ink);font-weight:600}
+.meta{color:var(--ink-3);font-size:12.5px;font-family:"IBM Plex Mono",monospace;margin:14px 0 0}
+pre{background:var(--sunken);border:1px solid var(--line);border-radius:7px;
+  padding:13px 15px;overflow-x:auto;font-family:"IBM Plex Mono",monospace;
+  font-size:12.5px;line-height:1.62;color:var(--ink);margin:0 0 16px;
+  font-variant-numeric:tabular-nums}
+pre b{color:var(--ink);font-weight:600}
+
+/* Result tables, styled the way pandas renders a DataFrame in a notebook: a rule
+   above and below the header, one under the last row, no vertical lines, a bold
+   left-aligned index and right-aligned numbers. */
+/* Centred with `margin:auto` on the flex item, NOT justify-content: a table wider
+   than the column (the floor sweep) stays scrollable to its left edge that way,
+   where justify-content would clip it there with no way to reach it. */
+.df{overflow-x:auto;margin:0 0 18px;-webkit-overflow-scrolling:touch;display:flex}
+.df>table{flex:0 0 auto;margin:auto}
+.df table{border-collapse:collapse;width:auto;margin-inline:auto;margin-block:0;
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;
+  font-variant-numeric:tabular-nums;color:var(--ink)}
+.df thead th{text-align:right;text-transform:none;letter-spacing:0;font-size:12.5px;
+  font-weight:600;color:var(--ink-2);padding:0 0 7px 22px;
+  border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
+  padding-top:7px;white-space:nowrap}
+.df thead th:first-child{padding-left:0;text-align:left}
+.df tbody th{text-align:left;text-transform:none;letter-spacing:0;font-size:12.5px;
+  font-weight:600;color:var(--ink);padding:6px 22px 6px 0;border-bottom:none;
+  white-space:nowrap}
+.df tbody td{text-align:right;padding:6px 0 6px 22px;border-bottom:none;
+  color:var(--ink-2);white-space:nowrap}
+.df tbody tr:last-child th,.df tbody tr:last-child td{padding-bottom:9px}
+.df tbody tr:hover td,.df tbody tr:hover th{background:var(--sunken)}
+.df table{border-bottom:1px solid var(--line-2)}
+.df b{color:var(--ink);font-weight:600}
+.df .note{color:var(--ink-3);font-weight:400}
+.df caption{caption-side:bottom;text-align:left;font-family:"IBM Plex Sans",sans-serif;
+  font-size:12px;color:var(--ink-3);padding-top:9px}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:0 0 16px;
+  font-variant-numeric:tabular-nums}
+th{text-align:left;font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;padding:0 12px 7px 0;border-bottom:1px solid var(--line-2)}
+td{padding:7px 12px 7px 0;border-bottom:1px solid var(--line);color:var(--ink-2)}
+td:first-child{color:var(--ink)}
+td.n,th.n{text-align:right;font-family:"IBM Plex Mono",monospace}
+td.n{color:var(--ink);font-weight:500}
+.tbl{overflow-x:auto}
+figure{margin:20px 0 22px}
+figure img{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--surface);display:block}
+figcaption{font-size:12px;color:var(--ink-3);margin-top:9px;max-width:none}
+.callout{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--blue);
+  border-radius:0 7px 7px 0;padding:14px 16px;margin:0 0 18px}
+.callout p:last-child{margin-bottom:0}
+ul{margin:0 0 14px;padding-left:20px}li{margin-bottom:8px;color:var(--ink-2)}
+li b{color:var(--ink);font-weight:600}
+a{color:var(--blue)}
+/* interactive chart */
+.bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-end;margin:0 0 14px;
+  padding-bottom:14px;border-bottom:1px solid var(--line)}
+.grp{display:flex;flex-direction:column;gap:6px}
+.grp>span{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font:500 12.5px/1 "IBM Plex Sans",sans-serif;padding:7px 11px;border-radius:5px;
+  border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);cursor:pointer}
+.chip:hover{border-color:var(--ink-3);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--ground)}
+.chip:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* The search takes whatever room is left on its row, so its right edge lands on the
+   same line as the selected-player card below it. */
+.grp.grow{flex:1 1 200px;min-width:0}
+.grp.grow input[type=search]{width:100%}
+input[type=search]{font:400 13px/1 "IBM Plex Sans",sans-serif;padding:8px 10px;border-radius:5px;
+  border:1px solid var(--line-2);background:var(--surface);color:var(--ink);min-width:150px}
+input[type=search]:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.count{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-3);
+  margin-left:auto;padding-bottom:7px;font-variant-numeric:tabular-nums}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 312px;gap:18px;align-items:start}
+@media (max-width:860px){.stage{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+svg{display:block;width:100%;height:auto}
+.dot{cursor:pointer;transition:r .3s cubic-bezier(.2,.6,.3,1),
+  fill-opacity .3s cubic-bezier(.2,.6,.3,1)}
+.dot.hot{r:7.5px;fill-opacity:1;transition:r .12s ease,fill-opacity .12s ease}
+.pinring{transition:cx .3s cubic-bezier(.2,.6,.3,1),cy .3s cubic-bezier(.2,.6,.3,1),
+  opacity .25s ease}
+.legend{display:flex;gap:16px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line);
+  font-size:12.5px;color:var(--ink-2);align-items:center}
+.swatch{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.side{display:flex;flex-direction:column;gap:14px}
+
+/* Explore's intro used to be capped at 70ch and pinned left inside a 1120px wrapper,
+   leaving a third of the row empty beside it. It now shares the stage's full measure,
+   so the text, the filters and the plot all start and end on the same two edges. */
+.xhead{max-width:none;margin:0 0 22px}
+.xhead .lede{max-width:92ch}
+.xhead .meta{margin-bottom:0}
+
+/* The axes legend, under the plot rather than as a card beside it: the scatter ends
+   well above the card did, so a tall card on the right left the page unbalanced with
+   nothing opposite it. */
+.axkey{display:grid;grid-template-columns:1fr 1fr;gap:10px 26px;margin-top:12px;
+  font-size:12.5px;line-height:1.55;color:var(--ink-2)}
+.axkey b{color:var(--ink);font-weight:600}
+.axkey .fine{grid-column:1/-1;margin:2px 0 0;font-size:11.5px;color:var(--ink-3)}
+@media (max-width:620px){.axkey{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px}
+.card h2{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);
+  margin:0 0 10px;font-weight:600}
+.who{font-size:19px;font-weight:600;margin:0 0 2px}
+.whosub{font-size:12.5px;color:var(--ink-2);margin:0 0 12px}
+.rows{display:grid;grid-template-columns:1fr auto auto;gap:6px 10px;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;font-variant-numeric:tabular-nums}
+.rows .k{color:var(--ink-2);font-family:"IBM Plex Sans",sans-serif;font-size:12.5px}
+.rows.four .k{font-size:12px;white-space:nowrap}
+.rows .v{color:var(--ink);font-weight:500;text-align:right}
+.rows .r{color:var(--ink-3);text-align:right}
+.rows.four{grid-template-columns:1fr auto auto auto;gap:6px 9px}
+.rows .d{color:var(--ink-2);text-align:right;font-variant-numeric:tabular-nums}
+.rows .hd{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);
+  font-family:"IBM Plex Sans",sans-serif}
+.empty{color:var(--ink-3);font-size:13px;margin:0}
+.pill{display:inline-block;font:500 10.5px/1 "IBM Plex Sans",sans-serif;padding:4px 7px;border-radius:4px}
+.pill.duel{background:var(--orange-soft);color:var(--orange)}
+.pill.nd{background:var(--blue-soft);color:var(--blue)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--ground);
+  padding:8px 10px;border-radius:6px;font-size:12px;line-height:1.45;max-width:230px;
+  opacity:0;transform:translateY(5px) scale(.97);transform-origin:0 100%;z-index:5;
+  transition:opacity .16s ease,transform .16s cubic-bezier(.2,.7,.3,1)}
+.tip.on{opacity:1;transform:translateY(0) scale(1)}
+.tip b{font-weight:600}
+.tip .m{font-family:"IBM Plex Mono",monospace;font-size:11.5px;opacity:.82;display:block;margin-top:3px}
+.tip .m b{font-weight:600;opacity:1}
+.tip .m i{font-style:normal;opacity:.6;letter-spacing:.02em}
+.mix{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.mixrow{display:grid;grid-template-columns:62px 1fr 22px;gap:7px;align-items:center;
+  font-size:11.5px;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+.ma{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mb{background:var(--sunken);height:7px;border-radius:2px;overflow:hidden}
+.mb i{display:block;height:100%;background:var(--blue);border-radius:2px;
+  width:0;transition:width .42s cubic-bezier(.2,.75,.3,1)}
+/* The delay is set per bar in script: 0 for a row that carries over from the
+   previous player, staggered for a row that is new and has to fill from zero. */
+.mix.go i{width:var(--w)}
+.mc{color:var(--ink-3);text-align:right}
+.caveat{font-size:11px;color:var(--ink-3);margin:0 0 12px;line-height:1.45}
+/* page nav */
+.top{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:baseline;
+  padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.brand{font-size:17px;font-weight:600;letter-spacing:-.01em;margin:0}
+.nav{display:flex;gap:4px;margin-left:auto}
+.nav button{font:500 13px/1 "IBM Plex Sans",sans-serif;padding:8px 13px;border-radius:5px;
+  border:1px solid transparent;background:none;color:var(--ink-3);cursor:pointer}
+.nav button:hover{color:var(--ink)}
+.nav button[aria-selected="true"]{background:var(--surface);border-color:var(--line-2);color:var(--ink)}
+.nav button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.hint{font-size:12.5px;color:var(--ink-3)}
+/* figures ship in both themes; PNGs cannot adapt on their own */
+.fig-dark{display:none}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .fig-light{display:none}
+  :root:not([data-theme="light"]) .fig-dark{display:block} }
+:root[data-theme="dark"] .fig-light{display:none}
+:root[data-theme="dark"] .fig-dark{display:block}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<div class="wrap">
+  <div class="top">
+    <p class="brand">VCT Playstyle</p>
+    <div class="nav" role="tablist">
+      <button id="tabExplore" role="tab" aria-selected="true" aria-controls="vExplore">Explore</button>
+      <button id="tabReport" role="tab" aria-selected="false" aria-controls="vReport">Report</button>
+    </div>
+  </div>
+

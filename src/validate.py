@@ -12,11 +12,12 @@ fitted quantity, so it is genuinely out of sample.
 
 Caveat to state, not to correct for: 2026 has no Champions event (decision 02).
 """
-import sys, numpy as np, pandas as pd, statsmodels.api as sm
-sys.path.insert(0, "src")
-import features as F, style as S
-from sklearn.decomposition import PCA
-from step11_role_independence import with_role
+
+import pandas as pd
+import statsmodels.api as sm
+
+import features as F, pca
+from roles import with_role
 
 TRAIN, TEST = [2023, 2024, 2025], 2026
 
@@ -39,8 +40,7 @@ def fit_and_project(cols):
         mu[f], sd[f] = r.mean(), r.std()
         Rtr[f] = (r - mu[f]) / sd[f]
     Ztr = pd.DataFrame(Rtr, index=tr.index)
-    pca = PCA(n_components=2).fit(Ztr.values)
-    flip = -1 if pca.components_[0][cols.index("first_engagement")] < 0 else 1
+    model, flip = pca.fit(Ztr.values, cols)
 
     # --- apply the FIXED machinery to 2026 ---
     Rte = {f: ((te[f] - (coef[f]["const"] + coef[f][F.QUALITY]*te[F.QUALITY])) - mu[f]) / sd[f]
@@ -48,14 +48,12 @@ def fit_and_project(cols):
     Zte = pd.DataFrame(Rte, index=te.index)
 
     def score(Z, idx):
-        s = pd.DataFrame(pca.transform(Z.values), index=idx, columns=["PC1","PC2"])
-        s["PC1"] *= flip
-        return s
+        return pca.scores(model, flip, Z, idx)
     out = pd.concat([pd.concat([tr[["player_id","year","handle","team","role","main_agent"]],
                                 score(Ztr, tr.index)], axis=1),
                      pd.concat([te[["player_id","year","handle","team","role","main_agent"]],
                                 score(Zte, te.index)], axis=1)])
-    return out, pca, flip
+    return out, model, flip
 
 
 def yoy(D, y0, y1, col):
@@ -67,13 +65,12 @@ def yoy(D, y0, y1, col):
 
 if __name__ == "__main__":
     cols = F.STYLE
-    H, pca, flip = fit_and_project(cols)
+    H, model, flip = fit_and_project(cols)
     print(f"fitted on {TRAIN}, projected {TEST} cold\n")
     print(f"  train {len(H[H.year!=TEST])} player-seasons | test {len(H[H.year==TEST])}")
     print(f"  variance explained by the two components on TRAIN: "
-          f"{pca.explained_variance_ratio_[0]:.1%}, {pca.explained_variance_ratio_[1]:.1%}\n")
+          f"{model.explained_variance_ratio_[0]:.1%}, {model.explained_variance_ratio_[1]:.1%}\n")
 
-    full = S.build(cols)
     from components import loadings
     M, L, sc = loadings(cols)
     IN = pd.concat([M[["player_id","year"]], sc], axis=1)
