@@ -7,3 +7,6 @@ statsmodels==0.15.0
 scikit-learn==1.9.1
 matplotlib==3.11.2
 pyarrow==25.0.1
+
+# The suite runs in CI, which installs only this file.
+pytest==9.1.1
