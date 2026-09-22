@@ -7,243 +7,525 @@
       2023&ndash;2026 franchised VCT, from public vlr.gg records &middot; snapshot 2026-09-19</p>
     </div>
 
-    <div class="sec">
+
+    <div class="sec" id="primer">
+      <p class="eyebrow">Before we start</p>
+      <h2>How VALORANT works</h2>
+      <div class="col">
+        <ul>
+          <li><b>Two teams of five.</b> One side attacks, the other defends, and they swap at
+          halftime. First to 13 rounds wins the map; a match is two or three maps.</li>
+          <li><b>The attackers carry a bomb</b> &mdash; the spike &mdash; and try to plant it on
+          one of the map&rsquo;s sites. The defenders try to stop them, or to defuse it once it
+          is down.</li>
+          <li><b>Each player picks an agent</b>, a character with its own abilities, bought
+          alongside weapons with credits earned during the game.</li>
+          <li><b>Riot sorts the agents into four roles.</b> <i>Duelists</i> take fights and open
+          up sites. <i>Initiators</i> clear space with information and stuns. <i>Controllers</i>
+          block sightlines with smoke. <i>Sentinels</i> hold ground and watch the flank.</li>
+          <li><b>The round&rsquo;s first fight is the opening duel</b> &mdash; the most dangerous
+          moment to be in, and the one duelists are expected to take. Being left alive alone
+          against several enemies is a <b>clutch</b>.</li>
+          <li><b>One row of data here is one player&rsquo;s season</b>: every map they played
+          that year, a median of 37 of them.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec" id="in-short">
+      <p class="eyebrow">In short</p>
+      <h2>What this found</h2>
+      <div class="col">
+        <p>Professional players do have playstyles that can be measured, that persist from one
+        season to the next, and that are not simply a restatement of how good they are.</p>
+        <p>Almost all of the difference between players lies on a single dimension:
+        <b>how much a player seeks out fights themselves, rather than enabling the fights their
+        teammates take.</b></p>
+        <p>Riot&rsquo;s own four-way classification of agents captures one part of that almost
+        perfectly, and the rest of it hardly at all. It tells you decisively whether a player is a
+        duelist. Below that line it separates the players who anchor a site from those who do not,
+        and says nothing useful about the difference between the remaining two roles.</p>
+        <p>And there are no player <i>types</i>. The differences between players are continuous.
+        Any set of groups drawn on this data is a description laid over a cloud, not a discovery
+        of separate populations.</p>
+      </div>
+    </div>
+
+    <div class="sec" id="what-went-in">
+      <p class="eyebrow">What went in</p>
+      <h2>What was measured, and why</h2>
+      <div class="col">
+        <p>A scoreboard mostly measures how <i>good</i> a player is. Feed those columns into a
+        model and the leading result is a quality ranking wearing a costume. So the six
+        behaviors below were chosen on two principles.</p>
+        <p><b>Measure a player&rsquo;s behavioral tendencies, not whether their outcomes were
+        successful.</b> How often a player takes the round&rsquo;s first fight is a tendency.
+        Whether they win it is an outcome.</p>
+        <p><b>And cover the whole round.</b> A round has a shape: you buy, you take the first
+        fight, the middle plays out, and it ends. A set that measured only the opening would
+        produce an axis that was really about early-round aggression and nothing else, while
+        claiming to be about aggression. So there is a behavior for each phase.</p>
+      </div>
+      <div class="df"><table><thead><tr><th></th><th>when in the round</th><th>measurable in one season</th><th>correlation with quality</th></tr></thead><tbody><tr><th>credits spent<span class="note">how much they buy</span></th><td>before the round</td><td>.78</td><td>+.17</td></tr><tr><th>opening duels<span class="note">the round&rsquo;s first fight</span></th><td>the first fight</td><td>.94</td><td>+.31</td></tr><tr><th>assists<span class="note">playing through teammates</span></th><td>mid-round</td><td>.90</td><td>&minus;.29</td></tr><tr><th>spike plants<span class="note">who carries and plants</span></th><td>mid-round</td><td>.92</td><td>&minus;.33</td></tr><tr><th>clutch situations<span class="note">left alive alone</span></th><td>the endgame</td><td>.39</td><td>+.09</td></tr><tr><th>headshot rate<span class="note">tapping or spraying</span></th><td>throughout</td><td>.87</td><td>+.08</td></tr></tbody><caption><b>Measurable in one season</b> is how far two random halves of a player&rsquo;s season
+      agree about them, where 1.0 would mean the halves give the same answer.
+      <b>Correlation with quality</b> is how closely the behavior tracks that player&rsquo;s
+      kills divided by deaths &mdash; near zero means the behavior describes style, and large
+      either way means it is mostly restating how good the player is. None of the six comes close
+      enough to be quality wearing a different name.</caption></table></div>
+      <div class="col">
+        <p>Two things then decide whether a tendency is usable: whether one season contains
+        enough of it to measure, and whether it is anything more than quality under another name.
+        Four further candidates were screened the same way and dropped &mdash; deaths, KAST, spike
+        defuses and an attack-minus-defense skew. <b><a href="#method">Method</a></b> says what happened to each.</p>
+        <p><b>The endgame is the phase this set measures worst, and the table shows it.</b> Clutch
+        situations is by far the weakest measurement here: a player faces only about a dozen a
+        season, so much of what is recorded is luck rather than the player, and a player who
+        changes organization keeps almost none of their clutch rate &mdash; so part of what it
+        captures is the seat rather than the person. It stays because it is the only behavior
+        covering how rounds end. Dropping it would leave the axis blind to the endgame entirely,
+        and a missing phase is a systematic gap where noise is only random error. That is a
+        deliberate trade, and it is the weakest link in this set.</p>
+      </div>
+    </div>
+
+    <div class="sec" id="finding-1">
       <p class="eyebrow">Finding 1</p>
       <h2>One robust style dimension, and a second that is marginal</h2>
       <div class="col">
-        <p>Seven per-map behaviours &mdash; opening duels, assists, spike plants, headshot rate,
-        credits spent, clutch situations and an attack-minus-defence skew &mdash; reduce to two
-        dimensions under <b>principal component analysis</b>. Each counts a situation the player put themselves in, never whether it went
-        well; deaths was dropped for being an outcome rather than a situation.</p>
+        <p>The six behaviors above reduce to two dimensions under <b>principal component
+        analysis</b>.</p>
         <p>How many dimensions are real is settled by a <b>permutation test</b>, not by a
         variance threshold. Each column is shuffled independently, 500 times &mdash; a
-        <b>Monte&nbsp;Carlo</b> null that breaks every link between behaviours while keeping each
+        <b>Monte&nbsp;Carlo</b> null that breaks every link between behaviors while keeping each
         one&rsquo;s own distribution. A dimension survives only if it captures more variation than
         95% of those shuffles produce. This is <b>Horn&rsquo;s parallel analysis</b> in its
         permutation form, used instead of the usual normal-random version because these features
         are skewed.</p>
       </div>
-      <div class="df"><table><thead><tr><th></th><th>eigenvalue</th><th>chance cutoff</th><th>margin</th><th>reproduces</th></tr></thead><tbody><tr><th>PC1 aggression</th><td>3.170</td><td>1.190</td><td>+1.980</td><td>0.993</td></tr><tr><th>PC2 isolation</th><td>1.170</td><td>1.110</td><td><b>+0.060</b></td><td>0.966</td></tr><tr><th>PC3</th><td>0.810</td><td>1.060</td><td>&minus;0.250</td><td>0.887</td></tr></tbody><caption><b>Eigenvalue</b> = how many of the seven behaviours&rsquo; worth of variation a
-      dimension captures; 1.0 is what one behaviour contributes on its own. <b>Margin</b> =
-      eigenvalue minus the chance cutoff; above zero, the dimension is real. <b>Reproduces</b> =
-      agreement between the dimension fitted on two random halves of the players, where 1.0 is
-      identical and 0 is unrelated.</caption></table></div>
+      <div class="df"><table><thead><tr><th></th><th>eigenvalue</th><th>share of variation</th><th>Monte Carlo null</th><th>margin</th><th>reproduces</th></tr></thead><tbody><tr><th>Aggression (PC1)</th><td>2.722</td><td>45.4%</td><td>1.165</td><td>+1.557</td><td>0.992</td></tr><tr><th>Isolation (PC2)</th><td>1.166</td><td>19.4%</td><td>1.095</td><td><b>+0.071</b></td><td>0.970</td></tr><tr><th>PC3</th><td>0.799</td><td>13.3%</td><td>1.046</td><td>&minus;0.247</td><td>0.933</td></tr></tbody><caption>The <b>eigenvalue</b> is how much of the variation across the six behaviors that
+      dimension accounts for, and the <b>share of variation</b> is the same figure as a
+      percentage of the whole. The <b>Monte Carlo null</b> is what the same calculation returns on
+      shuffled data: 500 shuffles, and the column gives the figure only 5% of them exceed. The
+      <b>margin</b> is how far above it the real dimension sits.
+      <b>Reproduces</b> is how closely the dimension comes out the same when the players are
+      split in half and it is fitted on each half separately. Two dimensions clear the null and
+      the third does not, so the analysis keeps two &mdash; and isolation clears it by 0.071,
+      the thin margin every later section returns to.</caption></table></div>
       <div class="col">
-        <p><b>Aggression beats chance by a factor of nearly three. Isolation beats it by 0.060</b>
-        &mdash; and among the 501 player-seasons that spend at least 70% of their maps in one role,
-        it <i>fails</i>. Sample size is not the explanation: <b>subsampling</b> the full data
-        down to the same n keeps it most of the time.</p>
-        <p>Isolation is real &mdash; it reproduces at 0.966 and holds up on an unseen year &mdash;
-        but it is second-order, and this report treats it as such.</p>
+        <p><b>Aggression (PC1) clears the null comfortably. Isolation (PC2) barely does</b>
+        &mdash; and there is one group of players where it does not clear it at all.</p>
+        <p>Nearly a third of player-seasons are split between two roles, so their season average
+        describes neither job cleanly. Restrict to the <b>501</b> seasons where a player
+        spent at least 70% of their maps in one role &mdash; the cleanest measurement in the data
+        &mdash; and run the same test again. <b>Only one dimension survives.</b> Isolation&rsquo;s
+        margin does not merely shrink: it falls from +0.071 to
+        &minus;0.035, below the null.</p>
+        <p>That could simply be the smaller sample &mdash; drop a third of the rows and a marginal
+        result would weaken anyway. So the same test was run on <b>100</b> random
+        samples of 501 seasons, drawn with no role restriction at all.
+        <b>Isolation survived in 99 of them</b>, and not one fell as far below the
+        cutoff as the role specialists did. The restriction is what removes it, not the sample
+        size.</p>
+        <p>Isolation is still real. It reproduces when the players are split into two halves and
+        the analysis is run separately on each, and it holds on a season the model never saw. But
+        it is second-order, and this report treats it as such throughout.</p>
       </div>
-      <figure><img src="FIG_3axes" alt="What each axis measures, in per-map units">
-        <figcaption><b>Aggression</b> carries 45.4% of the variation across the seven behaviours:
-        more opening duels and credits spent, against fewer assists, plants and clutches.
-        <b>Isolation / gunplay</b> carries 16.8%: higher headshot rate against lower utility
-        contribution.</figcaption></figure>
+      <figure><img src="FIG_3axes" alt="What each axis is made of: the six behaviors that compose it">
+        <figcaption><b>Isolation is 60% headshot rate</b> &mdash; the one behavior that contributes nothing at all to aggression, which is why these are two axes and not one. <b>Aggression is mostly taking the round&rsquo;s first fight and paying for it</b>, set against the three supporting behaviors. (Percentages are squared component weights, which sum to 100% by construction.)</figcaption></figure>
     </div>
 
-    <div class="sec">
+    <div class="sec" id="finding-2">
       <p class="eyebrow">Finding 2</p>
-      <h2>Riot&rsquo;s role taxonomy recovers one of these dimensions, not four</h2>
+      <h2>Four named roles, three distinguishable levels</h2>
       <div class="col">
         <p>A player&rsquo;s role here is the one they played most: every map is assigned a role
-        by the agent picked, and the most common one wins. Knowing it predicts 61% of where they
-        sit on aggression &mdash; which sounds like the measure is just restating the role label.
-        It is not.</p>
+        by the agent picked, and the most common role across the season wins.</p>
+        <p>Knowing a player&rsquo;s role predicts a large share of where they sit on aggression
+        &mdash; which sounds like the measure is just restating the label. It is not, and the way
+        it fails is specific.</p>
       </div>
-      <div class="df"><table><thead><tr><th>predictor of a player&rsquo;s aggression score</th><th>R&sup2;</th><th>n</th></tr></thead><tbody><tr><th>the full 4-way role label</th><td>0.605</td><td>775</td></tr><tr><th>a duelist / not-duelist flag alone</th><td>0.552</td><td>775</td></tr><tr><th>which of the other three roles, duelists set aside</th><td><b>0.164</b></td><td>570</td></tr><tr><th>the same, restricted to players who never picked a duelist</th><td><b>0.170</b></td><td>416</td></tr></tbody><caption><b>R&sup2;</b> = the share of the differences between players that the
-      predictor accounts for; 1.0 would mean the label tells you the score exactly, 0 that it tells
-      you nothing. <b>The last two rows are computed on their own smaller group, so they are not
-      directly comparable to the first two.</b> Setting the duelists aside removes the largest
-      source of variation &mdash; the spread among the remaining 570 is a third of the spread across
-      all 775 &mdash; so 0.164 is 16% of what is left, which is about 5% of the original.</caption></table></div>
+      <div class="df"><table><thead><tr><th>predictor of aggression</th><th>R&sup2;</th><th>n</th></tr></thead><tbody><tr><th>four-way role label</th><td>0.586</td><td>775</td></tr><tr><th>duelist binary classification</th><td>0.523</td><td>775</td></tr><tr><th>role among non-duelists</th><td><b>0.175</b></td><td>570</td></tr><tr><th>role, zero duelist maps</th><td><b>0.185</b></td><td>416</td></tr></tbody><caption><b>R&sup2;</b> is the share of the differences in aggression between players that the
+      predictor accounts for. The last two rows are computed on their own smaller group, so they
+      are <b>not directly comparable to the first two</b>: setting the duelists aside removes the
+      largest source of variation, so 0.175 is around 18% of what is left rather than of the original.
+      The last row keeps only seasons in which the player never picked a duelist agent at all,
+      which removes any question of the label being wrong.</caption></table></div>
       <div class="col">
-        <p><b>The full four-way taxonomy adds 0.052 over a single yes/no duelist flag.</b> Almost
-        everything the taxonomy knows about aggression is one bit: duelist, or not.</p>
-        <p>Set the duelists aside and knowing which of the remaining three roles a player has
-        accounts for 16% of the spread still there &mdash; about 5% of the original. Restricting
-        further to the 416 player-seasons that never picked a duelist agent once, which removes any
-        label question rather than adjusting for it, gives 17%, with 106 of them (25%) sitting
-        above the median aggression score for the whole population.</p>
-        <p>Where each role sits: <b>97%</b> of duelists are above the overall median aggression,
-        against <b>61%</b> of sentinels, <b>30%</b> of controllers and <b>21%</b> of initiators.
-        One category separates cleanly; the other three overlap.</p>
-        <p>The taxonomy answers one question: are you a duelist. It says almost nothing about how
-        the other three roles are played. <a href="#" id="toExplore2">See it in the explorer
+        <p>Almost all of what the taxonomy knows is a single yes/no question. A binary
+        classification &mdash; duelist, or not (<b>R&sup2; = .523</b>) &mdash; does nearly as well
+        as the full four-way label (<b>R&sup2; = .586</b>). Set the duelists aside, and knowing
+        which of the remaining three roles a player has accounts for only <b>18%</b> of the
+        aggression spread among them.</p>
+        <p>That could be blamed on the labels. A player labeled an initiator may still have spent
+        part of the season on duelist agents, and that blurring could be what makes the taxonomy
+        look weak. So the same test was run on the <b>416</b> player-seasons that never picked a
+        duelist agent at all &mdash; a group with nothing to mislabel. The answer barely moves
+        (<b>R&sup2; = .185</b>).</p>
+      </div>
+      <div class="df"><table><thead><tr><th>role</th><th>n</th><th>mean aggression</th><th>vs sentinel</th><th>vs controller</th><th>vs initiator</th></tr></thead><tbody><tr><th>duelist</th><td>205</td><td>+1.99</td><td>1.74</td><td>2.62</td><td><b>2.80</b></td></tr><tr><th>sentinel</th><td>123</td><td>+0.16</td><td>&mdash;</td><td>0.93</td><td>1.21</td></tr><tr><th>controller</th><td>209</td><td>&minus;0.77</td><td>&mdash;</td><td>&mdash;</td><td><b>0.32</b></td></tr><tr><th>initiator</th><td>238</td><td>&minus;1.11</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr></tbody><caption><b>Mean aggression</b> is in standard deviations, centered on the average player. Each remaining cell is <b>Cohen&rsquo;s d</b>: how far apart two roles sit on aggression, measured in those same standard deviations. Above 2.0 the two barely overlap at all; around 0.2 is a difference you would not notice watching them play.</caption></table></div>
+      <div class="col">
+        <p><b>The gaps are not evenly spaced.</b> At one end of the taxonomy, duelists and
+        initiators barely overlap at all (<b>2.80</b>): of the 416
+        players who never picked a duelist agent, exactly <b>one</b> reaches the median
+        duelist&rsquo;s aggression, and only <b>0.5%</b> of duelists fall below the median
+        non-duelist. At the other end, controllers and initiators are
+        <b>the same role played twice</b> (<b>0.32</b>) &mdash; a
+        difference you would not notice watching them. Sentinels sit genuinely in between: about
+        a standard deviation above controllers and initiators, and nearly two below duelists.</p>
+        <p>So four named roles resolve into three levels, and one gap does almost all the work.
+        The taxonomy tells you decisively whether a player is a duelist. Below that line it tells
+        you whether they anchor a site &mdash; and nothing at all about the difference between
+        smoking sightlines and clearing space. <a href="#" id="toExplore2">See it in the explorer
         &rarr;</a></p>
       </div>
       <figure><img src="FIG_1broles" alt="The same space, one panel per role">
-        <figcaption>Only the duelist panel is shifted. Initiator, controller and sentinel sit on
-        top of each other.</figcaption></figure>
+        <figcaption>The duelist panel sits far to the right. Sentinels are shifted slightly right
+        of center; controller and initiator are indistinguishable.</figcaption></figure>
     </div>
 
-    <div class="sec">
+    <div class="sec" id="finding-3">
       <p class="eyebrow">Finding 3</p>
-      <h2>It holds on a year the model never saw</h2>
+      <h2>Playstyle persists from one season to the next</h2>
       <div class="col">
-        <p><b>Out-of-sample validation.</b> Everything &mdash; the quality adjustment, the
-        standardisation, the PCA rotation &mdash; was refitted on 2023&ndash;2025 alone. The 2026
-        season was then projected through that fixed machinery, so it contributed nothing to any
-        fitted quantity and could not leak into its own test.</p>
-        <p>The test: for the 130 players present in both 2025 and 2026, does a player&rsquo;s
-        position in one year predict their position in the next?</p>
+        <p>A style that lasted one season would be a circumstance, not a trait. So: for the
+        <b>130</b> players who appear in both 2025 and 2026, does knowing where a player sat on
+        the aggression axis in one season tell you where they sat in the next?</p>
+        <p>The answer is a correlation, where <b>1</b> would mean every player landed in exactly
+        the same relative position both years and <b>0</b> would mean one year tells you nothing
+        at all about the next. Aggression comes out at <b>0.731</b>, isolation at
+        <b>0.693</b>.</p>
+        <p><b>Is that a lot?</b> On its own the number means nothing, so here is the same
+        correlation, across the same two seasons and the same players, for measures a reader
+        already has a feel for.</p>
       </div>
-      <div class="df"><table><thead><tr><th>correlation, 2025 position vs 2026 position</th><th>aggression</th><th>isolation</th></tr></thead><tbody><tr><th>2026 held out of the fitting</th><td><b>0.722</b></td><td>0.666</td></tr><tr><th>2026 included, as everywhere else in this report</th><td>0.729</td><td>0.698</td></tr></tbody><caption>Both rows cover the same 130 players. A correlation of 1.0 would mean
-      every player landed in exactly the same relative position in both years.</caption></table></div>
-      <div class="col"><p><b>Hiding the year cost 0.007 on aggression and 0.032 on isolation.</b>
-      The measure is not fitting noise specific to the seasons it was built on.</p></div>
+      <div class="df"><table><thead><tr><th>what persists from 2025 to 2026</th><th>correlation</th></tr></thead><tbody><tr><th>headshot rate</th><td>0.798</td></tr><tr><th>combat score (ACS)</th><td>0.747</td></tr><tr><th><b>aggression</b></th><td><b>0.731</b></td></tr><tr><th><b>isolation</b></th><td><b>0.693</b></td></tr><tr><th>kills ÷ deaths</th><td>0.634</td></tr><tr><th>their team’s win rate</th><td>0.399</td></tr></tbody><caption>Each figure is the correlation between a player&rsquo;s value in
+      2025 and their value in 2026, over the 130 players in both seasons. Read down: a
+      player&rsquo;s headshot rate is the most repeatable thing about them, and their
+      team&rsquo;s win rate the least.</caption></table></div>
+      <div class="col">
+        <p><b>A player&rsquo;s style is more persistent than their results.</b> Aggression holds
+        from one season to the next more strongly than that player&rsquo;s own kill-death ratio,
+        and far more strongly than whether their team wins. That is what you would expect of a
+        disposition rather than a performance, and it is the plainest evidence in this report
+        that style is not quality under another name. One caveat: aggression is built from six
+        measurements averaged together, and averaging cancels noise, so some of its advantage is
+        mechanical &mdash; though headshot rate is a single measurement and still beats it.</p>
+        <p><b>What this does and does not establish.</b> It measures whether a player keeps their
+        position, which is a fact about people. It says nothing about whether the axes themselves
+        would be found again from data they were not built on &mdash; that is a different
+        question, and it is tested in <b><a href="#robustness">Robustness</a></b>.</p>
+      </div>
       <figure><img src="FIG_2heldout" alt="2025 position against 2026 position"></figure>
     </div>
 
-    <div class="sec">
+    <div class="sec" id="case-study">
       <p class="eyebrow">Case study</p>
       <h2>Testing a popular claim</h2>
       <div class="col">
-        <p>Fans have argued for years that <b>aspas</b> is a stat-padder &mdash; that his numbers
-        come from avoiding the round&rsquo;s first fight while teammates take it.</p>
-        <p><b>The general result first, because it reframes the question.</b> Across the 149
-        duelist-seasons with a solid role label, a duelist who takes more opening duels dies more
-        often (r = +0.38) <i>and</i> deals more damage (r = +0.29). Deaths are K/D&rsquo;s
-        denominator and damage drives its numerator, so the two pull it in opposite directions.
-        Net effect on K/D: r = +0.08, which is nothing.</p>
+        <p>This is the question the project started from. <b>aspas</b> is one of the most
+        decorated duelists in the game, and fans have argued for years that he is a
+        <b>stat-padder</b>: that his numbers come from avoiding the round&rsquo;s first fight and
+        letting teammates take it instead. The stronger version of the accusation is
+        <b>baiting</b> &mdash; deliberately holding back so that teammates die in fights he could
+        have joined, which protects his own record at their expense.</p>
+        <p>That is three separate claims, and they can be tested separately: that he avoids the
+        first fight, that avoiding it is what produces his numbers, and that he plays apart from
+        his team.</p>
+        <p><b>Start with the second claim, because it can be tested directly.</b> aspas takes
+        <b>6.04</b> opening duels a map. Twenty-two duelist-seasons in this data
+        take even fewer &mdash; he sits at the low end of a populated range, not off the end of
+        it. If entering less were what produced a high kill-death ratio, those twenty-two would
+        have high ratios.</p>
+        <p><b>They do not. Those twenty-two average 1.05, against
+        1.06 for duelists as a whole. aspas is at 1.28.</b> The
+        players doing exactly what he is accused of doing have entirely ordinary ratios.</p>
+        <p>The same holds across the whole range. An opening duel resolves, by definition, into
+        either a first kill or a first death for the player who took it, so taking more of them
+        adds to both sides of the ratio at once. Across the 149 duelist-seasons with a
+        solid role label, duelists who enter more do die more often
+        (<b>r = +0.38</b>) and deal more damage (<b>r = +0.29</b>)
+        &mdash; but how often a duelist enters is essentially unrelated to their kill-death ratio
+        (<b>r = +0.08</b>). Here <b>r</b> is a correlation across those seasons, where
+        0 means no relationship and 1 would mean a perfect one.</p>
+        <p><b>Entering less does not come with a better kill-death ratio.</b> That is an
+        association across players, not a claim about what would happen to one player who changed
+        their game. But it is exactly the association the accusation depends on, and it is not
+        there &mdash; aspas&rsquo;s ratio sits <b>0.23 above</b> what a duelist
+        entering as little as he does is predicted to have, the 97th
+        percentile of that gap.</p>
       </div>
       <figure><img src="FIG_4kd" alt="Entry fragging costs deaths and earns damage">
-        <figcaption><b>K/D cannot be inflated by avoiding entries</b> &mdash; and equally cannot
-        tell you whether a duelist is doing their job. r is a correlation across those 149
-        seasons, on a scale of &minus;1 to +1.</figcaption></figure>
-      <div class="tbl col"><table>
-        <thead><tr><th>aspas &mdash; 2023&ndash;2026, 4 seasons, 3 teams, duelist on every map</th>
-          <th class="n">aspas</th><th class="n">percentile</th></tr></thead>
-        <tbody>
-          <tr><td>opening duels taken, per map</td><td class="n">6.04</td><td class="n">15th</td></tr>
-          <tr><td>deaths, per map</td><td class="n">14.03</td><td class="n">3rd</td></tr>
-          <tr><td>kills &divide; deaths, per season</td><td class="n">1.28</td><td class="n">97th</td></tr>
-          <tr><td>damage, per round</td><td class="n">151.9</td><td class="n">79th</td></tr>
-        </tbody></table></div>
+        <figcaption>Each dot is one duelist-season. The twenty-two who enter less than aspas
+        are picked out, and the two dashed lines are their average ratio and the average across
+        all duelists &mdash; they sit almost on top of each other. aspas is a single point
+        because the comparison group is defined against his four-season average.</figcaption></figure>
+      <div class="df"><table><thead><tr><th>metric</th><th>aspas</th><th>duelist average</th><th>percentile</th></tr></thead><tbody><tr><th>aggression (PC1)</th><td>0.79</td><td>2.34</td><td><b>8th</b></td></tr><tr><th>isolation (PC2)</th><td>&minus;0.11</td><td>&minus;0.30</td><td><b>60th</b></td></tr><tr><th>opening duels / map</th><td>6.04</td><td>6.95</td><td><b>15th</b></td></tr><tr><th>clutch situations / map</th><td>0.31</td><td>0.23</td><td><b>79th</b></td></tr><tr><th>assists / map</th><td>3.36</td><td>4.12</td><td><b>13th</b></td></tr><tr><th>deaths / map</th><td>14.03</td><td>15.59</td><td><b>3rd</b></td></tr><tr><th>K/D</th><td>1.28</td><td>1.06</td><td><b>97th</b></td></tr><tr><th>damage / round</th><td>151.9</td><td>142.4</td><td><b>79th</b></td></tr></tbody><caption>Four seasons, three teams, a duelist on every map. Compared against the 149 duelist-seasons whose label is
+      solid &mdash; at least 70% of maps on duelist agents. Against all 205 duelist-labeled
+      seasons he is 31st percentile on opening duels, but the 56 that fail the label test are
+      part-time duelists averaging 5.45 opening duels a map against 6.95 for full-time ones, which
+      is not the comparison the claim intends.</caption></table></div>
       <div class="col">
-        <p><b>The premise holds.</b> He takes the first fight less often than 85% of duelists, and
-        below the duelist median in all four seasons. <b>The stated mechanism does not</b>, because
-        entering less does not raise K/D &mdash; the result above says the two are unrelated.</p>
-        <div class="callout"><p>Percentiles are against the 149 duelist-seasons whose label is
-        solid: at least 70% of maps on duelist agents. Against all 205 duelist-labelled seasons he
-        is 31st percentile, but the 56 that fail the label test are part-time duelists averaging
-        5.45 opening duels a map against 6.95 for full-time ones &mdash; a comparison the claim does
-        not intend.</p></div>
-        <p><b>It is a team pattern, not one player.</b> Paper Rex is the least entry-heavy roster in
-        the data: its duelists average <b>5.54</b> opening duels a map across 6 seasons, against
-        6.95 for all duelists, and a full point below the next-lowest team (LEVIAT&Aacute;N, 6.56).
-        <code>jinggg</code> averages 5.12, the lowest of any duelist measured in more than one
-        season.</p>
-        <p><b>What this cannot show.</b> Baiting is a claim about intent, and about teammates dying
-        while you hold back. This measures neither. A disciplined duelist playing late timings and a
-        genuine baiter look identical here.</p>
+        <p><b>The first claim holds, and more strongly than the raw count suggests.</b> On the
+        aggression axis he sits at the 8th percentile among duelists
+        &mdash; lower than his opening-duel count alone puts him, because the axis also counts how
+        little he spends and which side he is aggressive on. He is below the duelist median in all
+        four seasons.</p>
+        <p><b>The third claim does not hold.</b> If he were playing away from his team, the
+        isolation axis is where it would show: that dimension is what separates players who
+        shoot a lot and contribute little utility from players embedded in their team&rsquo;s
+        rounds. He sits at the 60th percentile &mdash; the duelist average.</p>
+        <p>Two numbers do look like baiting at first. He is last alive more often than
+        79% of duelists, and assists less often than all but
+        13% of them. But you cannot be the last player alive if
+        you died early, and aspas dies less often than all but 3% of
+        duelists. Being alive at the end goes with not dying
+        (<b>r = &minus;0.28</b> between clutch situations and deaths). Ask instead
+        what clutch rate a duelist who dies as rarely as he does normally has, and he falls to the
+        63rd percentile &mdash; unremarkable.</p>
+        <p><b>So the premise holds and the explanation does not.</b> He really does take the first
+        fight far less than other duelists. But among duelists there is no trade-off between
+        entering and kills-per-death for that to work through, and neither measure that would
+        show him playing apart from his team shows it.</p>
+        <p><b>It is a team pattern, not one player.</b> Paper Rex has the least entry-heavy
+        duelists in the data &mdash; 5.54 opening duels a map across 6
+        seasons, against 6.95 for duelists as a whole &mdash; and they are also the
+        <i>least</i> isolated, at &minus;0.89 against &minus;0.30. Their duelists take
+        fewer first fights while playing closer to their team, not further from it. Taking fewer
+        opening duels and playing alone are different things, and these two axes can tell them
+        apart.</p>
+        <p><b>What this cannot show.</b> Baiting is a claim about intent, and about teammates
+        dying in fights the player chose not to join. Nothing here measures either. A disciplined
+        duelist who picks their moments and a genuine baiter would look the same in this data.</p>
       </div>
     </div>
 
-    <div class="sec">
+    <div class="sec" id="negative-result">
       <p class="eyebrow">Negative result</p>
       <h2>Discrete archetypes do not exist here</h2>
       <div class="col">
-        <p>The original goal was to find player types. Clustering always returns clusters, so the
-        question is not what the groups are but whether any exist. Two tests, both against the same
-        control: a <b>synthetic null</b> drawn from a multivariate normal with the real
-        data&rsquo;s mean and covariance &mdash; same shape and spread, no groups in it.</p>
-        <p><b>Do the boundaries land in the same place twice?</b> Yes. Splitting the players
-        in half, running <b>k-means</b> on each half separately and comparing the two labellings
-        by <b>adjusted Rand index</b> gives 0.73 at three groups, against 0.42 for the
-        structureless cloud. (ARI of 1.0 means the halves group every pair of players identically,
-        0 means chance. A <b>Gaussian mixture</b> returns the same verdict.)</p>
-        <p><b>Is there empty space between the groups?</b> No. The <b>silhouette score</b> is 0.365, against
-        0.315 for that same cloud &mdash; where 1.0 would mean groups with clear gaps between them
-        and 0 means none. The groups touch everywhere.</p>
-        <p>Both hold at once: a continuum with denser patches gives repeatable cutting lines
-        without the patches being separate populations. <b>At three groups, 18% of
-        player-seasons sit close enough to a boundary that their label is arbitrary.</b> Positions
-        on the two axes are the output; the groups are a description laid over them.</p>
+        <p>The project set out to find player types. But clustering always returns clusters: ask
+        any method for three groups and it gives you three, from any data at all, including a
+        cloud with nothing in it. So the question is never what the groups are. It is whether the
+        groups mean anything.</p>
+        <p><b>The measurement is separation.</b> Take one player. Measure how far they sit, on
+        average, from the other players in their own group &mdash; call that <b>A</b>. Then
+        measure how far they sit, on average, from the players in the nearest other group &mdash;
+        call that <b>B</b>.</p>
+        <p>If <b>B</b> is much larger than <b>A</b>, that player sits well inside their own group
+        with a gap before the next one. If the two are about the same, they are on the fence
+        between two groups. That player&rsquo;s score is how much bigger B is than A, as a share
+        of the larger of the two, and the separation figure is that averaged over every player.
+        <b>1</b> would mean every player is far from every group but their own. <b>0</b> would
+        mean everybody is as close to the neighboring group as to their own &mdash; the groups
+        touching everywhere, with nothing between them.</p>
+        <p>On its own a separation figure means little, so the quickest way to read one is beside
+        data where the answer is already known.</p>
       </div>
-    </div>
-
-    <div class="sec">
-      <p class="eyebrow">Robustness</p>
-      <h2>Does any of it rest on a judgement call?</h2>
-      <div class="col"><p>Three feature sets. Each difference between them is a choice that was
-      argued rather than derived, so each is run end to end.</p></div>
-      <div class="df"><table><thead><tr><th>feature set</th><th>n</th><th>dimensions kept</th><th>R&sup2; role</th><th>same players, same places?</th></tr></thead><tbody><tr><th>STYLE &mdash; 7 behaviours</th><td>775</td><td>2</td><td>.605</td><td><span class='note'>baseline</span></td></tr><tr><th>STRICT &mdash; drops the 2 contested ones</th><td>775</td><td>2</td><td>.602</td><td>r = <b>.964</b></td></tr><tr><th>CONC &mdash; only &ge;70% single-role seasons</th><td>501</td><td>1</td><td>.752</td><td>r = <b>1.000</b></td></tr></tbody><caption>The last column correlates each player&rsquo;s aggression score under that
-      specification against their score under STYLE, on the rows the two share.</caption></table></div>
-      <div class="col"><p>Dropping the two contested behaviours moves a player&rsquo;s position by r = .964,
-      which is effectively not at all. The single-role restriction keeps only one dimension,
-      which is the marginal-isolation finding from Finding 1 appearing again.</p>
-      <p>And the season-length floor, the one cutoff with no principled value. Swept from 5 maps to
-      30 &mdash; a six-fold change in strictness that takes the sample from 880 player-seasons down
-      to 555:</p></div>
-      <div class="df"><table><thead><tr><th>minimum maps in a season</th><th>5</th><th>10</th><th>15</th><th>20</th><th>25</th><th>30</th></tr></thead><tbody><tr><th>dimensions kept</th><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td></tr><tr><th>R&sup2; of aggression from role</th><td>.616</td><td>.608</td><td>.605</td><td>.592</td><td>.584</td><td>.572</td></tr><tr><th>year-to-year correlation, aggression</th><td>.750</td><td>.724</td><td>.729</td><td>.726</td><td>.721</td><td>.701</td></tr></tbody><caption>15 is the floor used throughout this report.</caption></table></div>
+      <figure><img src="FIG_5archetypes" alt="The real players next to a structureless cloud and three genuine types">
+        <figcaption>All three panels are cut into three groups the same way, and all three
+        separations are measured the same way. The right-hand panel is invented data that really
+        does contain three groups, placed as far apart as duelists are from initiators &mdash; a
+        gap this report measured in <a href="#finding-2">Finding 2</a> &mdash; so it shows what this measurement returns
+        when types genuinely exist.</figcaption></figure>
       <div class="col">
-        <p>No figure moves by more than 0.049 across the whole sweep. <b>Where a cutoff could not be
-        derived it was swept rather than defended</b>, which turns an arbitrary choice into a
-        reported non-issue.</p>
+        <p><b>The data looks like the panel on the left, not the one on the right</b> &mdash;
+        and the numbers say so more precisely than the pictures can. <b>Separation</b>, the figure
+        under each panel, averages <b>0.320 &plusmn; 0.010</b> across 200
+        structureless clouds. The real players separate at <b>0.369</b>, about five
+        times that spread above the floor &mdash; so there is genuinely a little more clumping
+        here than in a cloud with nothing in it. But three types as distinct as duelists are from
+        initiators separate at <b>0.527 &plusmn; 0.008</b>. <b>The real
+        data sits 3 times closer to no grouping than to three types</b>:
+        0.048 above the floor, 0.159 below the ceiling. Being measurably above
+        nothing is not the same as being anywhere near something.</p>
+        <p>The same thing shows up player by player: at three groups,
+        <b>139</b> player-seasons &mdash; 18% of them
+        &mdash; sit close enough to a boundary that which group they land in is arbitrary.</p>
+        <p><b>The boundaries are repeatable, and that is not a contradiction.</b> Split the
+        players in half, find the groups in each half separately, and the two halves agree about
+        who belongs with whom far more than they would on a structureless cloud
+        (0.738 against 0.377 &plusmn; 0.128).
+        A loaf can be cut in the same place twice without the slices being separate objects. That
+        is what a continuum with a consistent shape does, and it is why the three regions can
+        describe the space even though they are not populations.</p>
+        <p><b>Positions on the two axes are the finding. Any groups drawn over them are a
+        description, not a discovery.</b></p>
       </div>
     </div>
 
-    <div class="sec">
+    <div class="sec" id="robustness">
+      <p class="eyebrow">Robustness</p>
+      <h2>Does any of it rest on a judgment call?</h2>
+      <div class="col">
+        <p>Three choices in this analysis were argued rather than derived: what to adjust for,
+        how many maps a season needs before it counts, and whether to count behaviors per map or
+        per round. Each is run end to end, and what it changes is reported.</p>
+        <p><b>1. Adjusting for quality.</b> Every behavior is measured against what a player of
+        equal quality would do, and quality is measured by kills divided by deaths. Two other
+        choices were available, and they disagree.</p>
+      </div>
+      <div class="df"><table><thead><tr><th>adjusted for</th><th>role explains</th><th>quality left in</th></tr></thead><tbody><tr><th>nothing</th><td>0.688</td><td>+0.645</td></tr><tr><th><b>K/D</b> (chosen)</th><td><b>0.586</b></td><td><b>+0.425</b></td></tr><tr><th>combat score</th><td>0.354</td><td>+0.011</td></tr></tbody><caption><b>Role explains</b> is the share of the differences in aggression that the role label
+      accounts for; <b>quality left in</b> is how strongly a player&rsquo;s finished aggression
+      score still tracks their combat score. Unadjusted, &ldquo;aggression&rdquo; is
+      substantially &ldquo;is good at the game&rdquo;, which is the confusion this project exists
+      to remove &mdash; and adjusting for combat score removes more of it, along with real
+      style.</caption></table></div>
+      <div class="col">
+        <p>Adjusting for combat score looks better on both columns, and it is the wrong choice.
+        Combat score is accumulated from combat events, so a player who takes more fights
+        scores higher at the same level of skill &mdash; subtract it and you subtract part of the
+        aggression being measured along with the skill. Kills divided by deaths does not
+        accumulate that way: an opening duel adds one to the kills or one to the deaths, so
+        taking more of them moves both sides of the ratio at once. The choice is to <b>under-correct rather than over-correct</b>, and the cost is the
+        0.586 rather than 0.354 in the first column: some of what looks like role is really
+        quality that was left in.</p>
+        <p><b>2. The season-length floor</b>, the one cutoff with no principled value. A player
+        needs 15 maps in a season to be included. Swept from 5 to 30 &mdash; a six-fold change in
+        strictness that takes the sample from 880 player-seasons down to 555:</p>
+      </div>
+      <div class="df"><table><thead><tr><th>minimum maps in a season</th><th>5</th><th>10</th><th>15</th><th>20</th><th>25</th><th>30</th></tr></thead><tbody><tr><th>dimensions kept</th><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td><td>2</td></tr><tr><th>R&sup2; of aggression from role</th><td>.598</td><td>.590</td><td><b>.586</b></td><td>.572</td><td>.568</td><td>.556</td></tr><tr><th>aggression, 2025 to 2026</th><td>.740</td><td>.721</td><td><b>.731</b></td><td>.731</td><td>.724</td><td>.703</td></tr></tbody><caption><b>R&sup2; of aggression from role</b> is the same figure <a href="#finding-2">Finding 2</a> reports: the share of the differences in aggression between players that the four-way role label accounts for. <b>Aggression, 2025 to 2026</b> is Finding 3&rsquo;s persistence figure &mdash; how strongly a player&rsquo;s aggression in one season predicts their aggression in the next &mdash; recomputed at each floor, on the players who qualify at it: 148 at a floor of 5, 130 at 15, 82 at 30. 15 is the floor used throughout this report.</caption></table></div>
+      <div class="col">
+        <p>No figure moves by more than <b>0.043</b> across the whole sweep, and two dimensions
+        are kept at every floor. Where a cutoff could not be derived it was swept rather than
+        defended, which turns an arbitrary choice into a reported non-issue.</p>
+        <p><b>3. Per map or per round.</b> A map is first to 13 rounds, so it runs anywhere from
+        13 to 48 rounds, and four of the six behaviors are counts averaged per map rather than
+        rates per round. A player whose team wins quickly has fewer chances to do anything. Rebuilt
+        from the top with every count converted to a rate, players land in the same positions at
+        <b>r = 0.998</b>. The reason it does not matter is that the opportunity count does not vary
+        between players: a season averages 37 maps, and across players the average map length runs
+        from 20.4 rounds to 22.0.</p>
+        <p><b>4. Would the axes be found again from data they were not built on?</b> Everything
+        so far was fitted on all four seasons at once. Fit the whole thing on <b>2026 alone</b>
+        instead &mdash; 197 player-seasons, never mixed with the rest &mdash; and compare
+        the axes that come out.</p>
+        <p><b>Aggression comes back as the same axis</b>, built from the same behaviors in
+        almost exactly the same proportions (0.999, where 1.0 would be identical).
+        <b>Isolation does not come back at all</b>: on 2026 by itself, only one dimension clears
+        the Monte Carlo null from <a href="#finding-1">Finding 1</a>. Part of that is the smaller sample &mdash; the same test
+        on 100 random samples of 197 seasons drawn from the other years keeps
+        two dimensions 70 times, so failing at this size is not unusual. It is
+        suggestive rather than decisive, and it is the fourth independent sign pointing the same
+        way about the second dimension.</p>
+        <p><b>And one restriction that is not a judgment call but a limit of the data.</b> Nearly
+        a quarter of player-seasons are spent switching between roles, so their season average
+        describes a blend of two jobs. Restricted to the 501 seasons that spend at least 70% of
+        their maps in a single role, aggression is unchanged &mdash; but <b>only one dimension
+        survives</b>. That is the isolation result from <a href="#finding-1">Finding 1</a>, appearing again from a
+        different direction.</p>
+      </div>
+    </div>
+
+    <div class="sec" id="method">
       <p class="eyebrow">Method</p>
       <h2>Five decisions that changed the answer</h2>
-      <div class="col"><p>Sixteen decisions are recorded, each with its diagnostic, its measured
-      cost and what would overturn it. These five mattered most.</p></div>
+      <div class="col"><p>Each of these could have gone the other way, and each one moved a
+      number in this report.</p></div>
       <div class="tbl"><table>
         <tbody>
-          <tr><td><b>Measure style, not skill</b></td><td>Every behaviour is <b>residualized</b> on K/D &mdash; regressed
-            on it, and only the residual kept &mdash; rather than on combat score. Combat score <i>accumulates</i> with how much a player
-            fights, so it is inflated by aggression itself &mdash; the very thing being measured.
-            A ratio cancels fight volume out. The average correlation between a raw behaviour
-            and the yardstick is .389 for combat score against .205 for K/D, so K/D leaves
-            less skill in the style measure to begin with.</td></tr>
-          <tr><td><b>Confounder, not mediator</b></td><td>Every quality measure is partly
-            <i>caused</i> by playstyle, so adjusting for all of them would delete real style
-            along with skill. K/D is the one least likely to sit on that causal path. The choice
-            is to under-correct and state which way the remaining bias runs.</td></tr>
-          <tr><td><b>Correct for rare events</b></td><td>A player faces a median of 13 clutch
-            situations a season, so a year-to-year correlation is dragged down by
-            measurement noise &mdash; <b>attenuation</b>. Reliability is estimated by
-            <b>split-half</b> correlation over 200 random splits, scaled up with the
-            <b>Spearman&ndash;Brown</b> formula, and the observed stability divided by it. Reversed two of nine feature decisions.</td></tr>
-          <tr><td><b>Player, not roster</b></td><td>Stability was re-measured on the 104 players
-            who <i>changed organisation</i> between seasons. Clutch rate fell from .35 among
-            players who stayed to .01 among those who moved &mdash; a team assignment wearing a
-            player trait&rsquo;s costume.</td></tr>
+          <tr><td><b>Screen the behaviors, do not threshold them</b></td><td>Every candidate on
+            the scoreboard was put through the same three questions: is it a tendency or an
+            outcome, can one season measure it, and is it anything more than quality renamed.
+            <b>No cutoff was set for any of them.</b> There is no accepted value for
+            &ldquo;reliable enough&rdquo; or &ldquo;too close to quality&rdquo; to borrow, so any
+            number chosen would have been invented and would then have decided the feature set
+            quietly. Each verdict is written out with its reason instead. Deaths is the case that
+            shows it working: it passes both measurable tests and was dropped anyway, because a
+            death is a fight lost.</td></tr>
+          <tr><td><b>Measure style, not quality</b></td><td>Every behavior is measured against
+            what a player of equal quality would do &mdash; the behavior is predicted from the
+            player&rsquo;s kills-per-death, and only the part that prediction misses is kept.
+            Combat score was the obvious alternative and is the wrong one: it accumulates from
+            combat events, so a player who takes more fights scores higher at the same level of
+            skill, and subtracting it would subtract part of the aggression being measured.
+            Averaged across the six behaviors, a raw behavior correlates <b>.386</b> with
+            combat score and only <b>.212</b> with kills-per-death &mdash; so the measure
+            we adjust for starts out less entangled with the behaviors it is meant to strip
+            quality out of.</td></tr>
+          <tr><td><b>Correct for rare events</b></td><td>A player faces a median of <b>12</b>
+            clutch situations a season. Measure anything from twelve events and the measurement
+            is half luck &mdash; so if a player&rsquo;s clutch rate looks different this year from
+            last, that may be the player changing or may be the noise. The two are separated by
+            splitting each season in half at random and asking whether the halves agree about the
+            player. Whatever they disagree about is noise, and the year-to-year figure is scaled
+            up by exactly that much. Two features had been judged unusable on their raw numbers
+            and survived this correction.</td></tr>
+          <tr><td><b>Player, not roster</b></td><td>A behavior that looks like a personal trait
+            may be a job the coach assigned. The test is what survives a transfer: measure each
+            behavior again on only the <b>104</b> players who changed organization between
+            seasons. Most hold up &mdash; headshot rate and opening duels barely move. Clutch rate
+            collapses: a player&rsquo;s clutch rate correlates <b>.35</b> from one season to the
+            next among players who stayed on the same roster, and <b>.01</b> among those who
+            moved. A player who changes roster keeps essentially none of it.
+            <b>It is kept as a behavior anyway</b>, because being last alive is one of the few
+            things in this data that is not determined by a player&rsquo;s role &mdash; but on
+            this evidence it describes the seat more than the person, and that is stated rather
+            than buried.</td></tr>
           <tr><td><b>Do not control for agent</b></td><td>Players keep their most-played agent
-            34% of the time when they stay on a roster and 30% when they leave, so agent choice
-            travels with the player, not the team. Role is held out as a <i>validation label</i>
-            and never enters the model, so cross-role structure is shown rather than
-            engineered.</td></tr>
-        </tbody></table></div>
+            <b>35%</b> of the time when they stay on a roster and <b>35%</b> when they leave
+            &mdash; no difference at all &mdash; so agent choice travels with the player rather
+            than the team, and subtracting it would subtract part of the style. Role is held out
+            as a check on the finished measurement and never enters the model. Controlling for it
+            would have made the headline claim true by construction: remove role, then show the
+            answer is not role.</td></tr>
+        </tbody>
+      </table></div>
     </div>
 
-    <div class="sec">
-      <p class="eyebrow">Limitations</p>
-      <h2>What this does not show</h2>
-      <div class="col"><ul>
-        <li><b>The second dimension is marginal.</b> Isolation reproduces across halves at 0.966
-          and holds on the unseen year, but beats chance by only 0.060 and fails among single-role
+    <div class="sec" id="limitations">
+      <h2>Limitations</h2>
+      <div class="col">
+        <p><b>Where the finding is weaker than it looks.</b> These are limits of this data and
+        this sample. A larger or cleaner source would ease them.</p>
+        <ul>
+        <li><b>The second dimension is marginal.</b> Isolation reproduces across halves at 0.970
+          and holds on the unseen year, but clears its Monte Carlo null by only 0.071 and fails among single-role
           players. Treat aggression as the finding and isolation as a secondary reading.</li>
-        <li><b>The name of the second dimension is an interpretation, not a result.</b>
-          &ldquo;Lurking&rdquo; fits five of seven predictions made in advance, including a lower
-          trade rate (r = &minus;0.28), which is direct evidence of playing away from teammates. It
-          fails the two that would separate lurking from a general low-utility, high-aim style.
-          Settling it needs player positions and within-round timing; this dataset has neither.</li>
         <li><b>One row averages several jobs.</b> A player uses a median of 5 agents a season, and
           23% of player-seasons spend under 60% of their maps in a single role. For those the season
           average blends jobs done separately &mdash; their year-to-year stability on aggression is 0.47,
           against 0.87 for players who spend 80&ndash;95% of their maps in one role. The grain cannot be made finer: a median player-agent-season is only
-          4 maps, too few to measure the weaker behaviours at all.</li>
-        <li><b>The agent label is weak; the role label is not.</b> A player&rsquo;s most-played
-          agent covers a median of 43% of their maps, their most-played role 81%. Role-level claims
-          are safe here, agent-level ones are not.</li>
+          4 maps, too few to measure the weaker behaviors at all.</li>
+        <li><b>Assists depend on teammates finishing the fight.</b> An assist is credited only if
+          the enemy dies, so unlike the other five behaviors it is partly conditional on the
+          round going the team&rsquo;s way. It is also the behavior most determined by role.
+          It stays because how much a player builds their game around teammates is exactly the
+          tendency this report is trying to measure, but it is the least clean of the six on the
+          principle the set was chosen by.</li>
+        <li><b>775 rows are not 775 independent observations.</b> They come from 400
+          players, up to four seasons each, and every R&sup2; and correlation above treats
+          them as independent. The point estimates are unaffected; the precision around
+          them is overstated, by roughly the ratio of rows to players. Where it was
+          cheap to avoid, it was: the split-half replication in <a href="#finding-1">Finding 1</a> splits by
+          <i>player</i>, never by row, because a row-wise split puts the same player in
+          both halves. The role R&sup2; figures are not corrected for it.</li>
         <li><b>2026 is incomplete.</b> The season is still running and has no Champions event, so
           the held-out year is missing the tier where the strongest
           teams meet, about 7% of a normal year&rsquo;s maps. Stated, not corrected
           for.</li>
+        <li><b>The agent label is weak; the role label is not.</b> A player&rsquo;s most-played
+          agent covers a median of 43% of their maps, their most-played role 81%. Role-level claims
+          are safe here, agent-level ones are not.</li>
+        </ul>
+        <p><b>What this cannot answer at all.</b> These do not improve with more of the same
+        data. Answering them needs a different kind of record entirely.</p>
+        <ul>
+        <li><b>The name of the second dimension is an interpretation, not a result.</b>
+          &ldquo;Lurking&rdquo; &mdash; playing away from teammates, hunting flanks and late picks
+          &mdash; fits five of seven predictions written down in advance. The clearest is that
+          players high on this dimension are less often traded, meaning a teammate rarely kills
+          the enemy who just killed them (r = &minus;0.26). Being traded requires a teammate
+          nearby, so that is direct evidence of playing alone. It fails the two predictions that
+          would separate lurking from a general low-utility, high-aim style.
+          Settling it needs player positions and within-round timing; this dataset has neither.</li>
+        <li><b>Attacking and defending are not separated.</b> An earlier version carried the
+          attack-minus-defense skew as a seventh behavior, and it was dropped: only four of the
+          six behaviors can be split by side at all, so keeping it gave one of them a dimension
+          the others could not have. The cost is that a duelist who opens sites on attack and a
+          player who takes early duels defending now land in the same place, with identical
+          totals and opposite styles.</li>
         <li><b>Associational only.</b> Nothing here claims that a style causes a result.</li>
-      </ul></div>
+        </ul>
+      </div>
     </div>
   </section>

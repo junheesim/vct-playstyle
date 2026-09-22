@@ -22,7 +22,7 @@ from roles import with_role
 
 
 def residualize(ps: pd.DataFrame, cols, covariate: str = None) -> pd.DataFrame:
-    """Each feature minus what the covariate predicts. Standardised afterwards so
+    """Each feature minus what the covariate predicts. Standardized afterwards so
     every feature enters the style space on the same scale."""
     covariate = covariate or F.QUALITY
     out = {}
@@ -58,7 +58,7 @@ def build(feature_set=None) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    for name, cols in [("STRICT", F.STRICT), ("STYLE", F.STYLE)]:
+    for name, cols in [("STYLE", F.STYLE)]:
         S = build(cols)
         print(f"\n{name}: {S.shape[0]} player-seasons x {len(cols)} features")
         q = S[cols].corrwith(S[F.QUALITY]).abs()
@@ -68,7 +68,7 @@ if __name__ == "__main__":
             S.to_parquet(paths.INTERIM / "style_matrix.parquet")
             print(f"  wrote {paths.INTERIM/'style_matrix.parquet'}\n")
             show = ["handle","year","team","role","main_agent",
-                    "first_engagement","clutch_att","first_engagement_gap"]
+                    "first_engagement","clutch_att","creds_per_round"]
             def block(title, df):
                 print(f"  {title}")
                 print("   " + df[show].round(2).to_string(index=False).replace("\n","\n   ") + "\n")

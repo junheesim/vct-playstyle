@@ -6,3 +6,9 @@ __pycache__/
 .ipynb_checkpoints/
 
 .pytest_cache/
+
+# Working notes, kept locally and never shipped: STATUS.md is assistant-facing,
+# and decisions/ records each analytical choice in a voice written about Junhee
+# rather than by him. Both were removed from git history on 2026-09-22.
+STATUS.md
+decisions/

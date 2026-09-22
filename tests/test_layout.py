@@ -32,8 +32,14 @@ def test_the_diagnostics_are_not_imported_by_the_pipeline():
 
 
 def test_every_decision_cites_something_that_exists():
-    """`decisions/05` cited `src/step06_reliability.py`, which never existed."""
+    """`decisions/05` cited `src/step06_reliability.py`, which never existed.
+
+    `decisions/` is kept locally and is not part of the repository, so this skips
+    where it is absent -- but it still runs on the machine where those records are
+    edited, which is the only place a citation can go stale."""
     import re
+    if not (paths.ROOT / "decisions").is_dir():
+        import pytest; pytest.skip("decisions/ is local-only; nothing to validate here")
     bad = []
     for md in sorted((paths.ROOT / "decisions").glob("*.md")):
         for ref in re.findall(r"`src/([\w/]+\.py)([^`]*)`", md.read_text()):

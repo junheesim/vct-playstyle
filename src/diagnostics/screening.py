@@ -6,11 +6,11 @@ step09_team_vs_player, step10_scorecard -- which recorded WHEN a check happened
 rather than what it asks.
 
     rating-proxy    does vlr `Rating` hide a first-blood term? (it does not)
-    quality-metric  ACS vs Rating vs K/D vs team win rate -- which yardstick?
+    quality-metric  ACS vs Rating vs K/D vs team win rate -- which measures quality best?
     screen          reliability, stability and quality loading, per feature
     attenuation     a simulation proving the reliability correction recovers an
                     answer that is known in advance
-    entry-vs-acs    is first_engagement's +.681 with ACS real, or a bent yardstick?
+    entry-vs-acs    is first_engagement's +.681 with ACS real, or a bent measure?
     team-vs-player  how much of a feature's persistence is the roster, not the player?
     scorecard       all five screening tests, side by side
 """
@@ -39,7 +39,7 @@ def rating_proxy():
                           "kd","First Kills","First Deaths","involvement"])
     print(f"n = {len(d):,} player-maps\n")
 
-    rule("Raw correlations with each candidate yardstick", 70)
+    rule("Raw correlations with each candidate measure of quality", 70)
     print(f"  {'feature':<14}{'r with Rating':>15}{'r with ACS':>14}")
     for f in ["First Kills","First Deaths","involvement","Assists","Deaths","kast"]:
         print(f"  {f:<14}{d[f].corr(d.Rating):>15.3f}{d[f].corr(d['Average Combat Score']):>14.3f}")
@@ -61,7 +61,7 @@ def rating_proxy():
 def screen():
     d  = F.build()
     ps = F.seasons(d)
-    print(f"{len(ps)} player-seasons | yardstick = {F.QUALITY}\n")
+    print(f"{len(ps)} player-seasons | quality measured by {F.QUALITY}\n")
 
     FEATS = F.STYLE + ["defuses", "kast", "econ"]
     rows = []
@@ -73,7 +73,7 @@ def screen():
                         for y in (2023, 2024, 2025) if y+1 in a.columns])
         obs = pr.t.corr(pr.t1)
         rows.append({"feature": f, "verdict": "STYLE" if f in F.STYLE else
-                     ("PENDING" if f in F.PENDING else "dropped"),
+                     "dropped",
                      "rel": rel, "rel_lo": lo, "rel_hi": hi, "observed": obs,
                      "true": obs/rel if pd.notna(rel) else np.nan,
                      "true_lo": obs/hi if pd.notna(hi) else np.nan,
@@ -204,9 +204,9 @@ def quality_metric():
                         for y in (2023,2024,2025) if y+1 in a.columns])
         print(f"  {c:<12}{pr.t.corr(pr.t1):>8.3f}")
 
-    rule("D. Contamination of the STYLE set, by yardstick", 70)
+    rule("D. Contamination of the STYLE set, by measure of quality", 70)
     print(f"  {'feature':<18}{'r with ACS':>12}{'r with K/D':>12}")
-    for f in F.STYLE + F.PENDING:
+    for f in F.STYLE:
         print(f"  {f:<18}{ps[f].corr(ps.acs):>+12.3f}{ps[f].corr(ps.kd_ratio):>+12.3f}")
     print(f"\n  mean |r| over STYLE -- ACS: {ps[F.STYLE].corrwith(ps.acs).abs().mean():.3f}"
           f"   K/D: {ps[F.STYLE].corrwith(ps.kd_ratio).abs().mean():.3f}")
@@ -223,7 +223,7 @@ def team_vs_player():
     q  = ps.merge(tm, on=["player_id","year"])
 
     rows = []
-    for f in F.STYLE + F.PENDING + ["kd_ratio"]:
+    for f in F.STYLE + ["kd_ratio"]:
         pv = q.pivot_table(index="player_id", columns="year", values=f)
         tv = q.pivot_table(index="player_id", columns="year", values="team", aggfunc="first")
         pr = pd.concat([pd.DataFrame({"t": pv[y], "t1": pv[y+1], "same": tv[y] == tv[y+1]}).dropna()

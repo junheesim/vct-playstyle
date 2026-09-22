@@ -29,7 +29,7 @@ See `METHODS.md` for what each Phase 2 diagnostic actually computes.
 
     PHASE 2 — choose what to measure, and know how well you measured it
       04 features     candidates that plausibly measure style        DONE
-      06 yardstick    a quality detector that is not itself bent     DONE
+      06 quality      a quality detector that is not itself bent     DONE
       05 reliability  can each measurement be trusted?               DONE
       09 team test    is it the player, or the roster?               DONE
       11 role test    does it say anything the role label does not?  DONE
@@ -40,7 +40,8 @@ See `METHODS.md` for what each Phase 2 diagnostic actually computes.
 
     PHASE 3 — subtract the contaminants
       10 covariates  quality only; map/opponent do not vary       DONE
-      residualize     remove agent, map, opponent, quality
+      18 round count does not vary either; swept anyway           DONE
+      residualize     remove quality (kd_ratio) only
 
     PHASE 4 — find the structure
       11 components  2 axes: aggression, isolation/gunplay       DONE
@@ -57,7 +58,7 @@ on a wobbly table:
 
   - **reliability** — how precise is the scale? If it reads +/-50g, do not report a
     30g difference.
-  - **yardstick (06)** — is the scale zeroed, or does it read heavy?
+  - **the quality measure (06)** — is the scale zeroed, or does it read heavy?
   - **residualization (next)** — subtract the container so you get the contents.
   - **team test (09)** — is the object on the scale, or partly resting on the table?
 
@@ -72,10 +73,13 @@ rather than being finished.
 |-------|------------------------|
 | 1 | 2021-22 amateurs, double-counted rows, merged identities |
 | 2 | features that are really quality; features that cannot be measured; features that belong to the team |
-| 3 | agent, map, side, opponent strength, remaining quality |
+| 3 | quality (K/D). Map, opponent, side and round count were MEASURED not to vary between players, and agent/role are held out by decision 08 |
 | 4 | the actual finding |
 | 5 | whether to believe it |
 
 At the end of Phase 3 each player-feature is a single number meaning: *how much does
-this player do this, compared to what you would expect given their agent, their maps,
-their opponents and their skill level?* That number is style. Phase 4 finds its shape.
+this player do this, compared to what you would expect of a player of equal SKILL?*
+Map, opponent, side and round count are not in that sentence because decisions 10 and
+18 measured them and they do not vary between players; agent and role are not in it
+because decision 08 holds them out as validation labels. That number is style. Phase 4
+finds its shape.

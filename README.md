@@ -1,108 +1,134 @@
-# VCT playstyle
+# VCT Playstyle
 
-Measuring playstyle in professional VALORANT, from public match data.
+[![tests](https://github.com/junheesim/vct-playstyle/actions/workflows/tests.yml/badge.svg)](https://github.com/junheesim/vct-playstyle/actions/workflows/tests.yml)
 
-**→ [Read the report](https://junheesim.github.io/vct-playstyle/#report)**
+**Measuring playstyle in professional VALORANT, and separating it from how good a
+player is.** Six behaviors, drawn from 117,000 rows of public match data, reduce to two
+style dimensions that persist across seasons and are not a restatement of Riot's agent
+roles.
 
-Includes a case study testing the long-running fan claim that **aspas** is a
-stat-padder: the factual premise holds (15th-percentile entry rate across four
-seasons) but the stated mechanism does not, because entry fragging turns out to be
-K/D-neutral — it costs deaths and earns damage in roughly equal measure.
+**[Read the report →](https://junheesim.github.io/vct-playstyle/#report)**  ·
+**[Explore 775 player-seasons →](https://junheesim.github.io/vct-playstyle/)**
 
-One robust style dimension and a second, marginal one. Riot's four-way role taxonomy
-recovers exactly one of them — whether you are a duelist — and among the 570
-non-duelist player-seasons it explains 16% of where a player sits. Discrete archetypes
-do not exist: playstyle is continuous.
+775 player-seasons · 400 players · 1,532 matches · 2023–2026 franchised VCT
 
-**[Explore the data interactively →](https://junheesim.github.io/vct-playstyle/)**
+![What each axis is made of](figures/3-axes.png)
 
-775 player-seasons · 400 players · 2023–2026 franchised VCT · **data snapshot
-2026-09-19** (the 2026 season is still running and contains no Champions event, so all
-2026 figures will change if the source is refreshed).
+---
 
-Source: Kaggle mirror of vlr.gg (`ryanluong1/valorant-champion-tour-2021-2023-data`).
+## What it found
 
-## Layout
+**Two style dimensions, one of them solid.** Six behaviors reduce to two components,
+kept only if they beat a Monte Carlo null rather than a variance threshold. *Aggression*
+clears it comfortably at 45.4% of the variation; *isolation* clears it by 0.071, fails
+among role specialists, and is reported as marginal throughout.
+
+**Riot's four named roles are three distinguishable levels.** A duelist / not-duelist
+binary gets R² .523 against the full four-way label's .586 — almost everything the
+taxonomy knows is one bit. Duelists barely overlap anyone else, and controllers and
+initiators are the same role played twice (Cohen's d = 0.32).
+
+**Playstyle persists, more strongly than performance does.** From one season to the
+next a player's aggression correlates .731 — higher than their own kill-death ratio
+(.634) and far higher than whether their team wins (.399). That is what a disposition
+looks like rather than a result.
+
+**Discrete archetypes do not exist.** Separation among the real players is 0.369,
+against 0.320 ± 0.010 for structureless clouds and 0.527 for simulated data that really
+does contain three types. The data sits three times closer to no grouping than to real
+types. Playstyle is continuous.
+
+**Case study — is aspas a stat-padder?** He does take the round's first fight far less
+than other duelists: 8th percentile on aggression among them. But twenty-two
+duelist-seasons enter even less than he does, and their kill-death ratio averages 1.05
+against 1.06 for duelists as a whole. His is 1.28. Entering less simply does not come
+with a better ratio, so it cannot be where his numbers come from.
+
+---
+
+## How the repository works
 
 ```
-index.html     the built site — interactive explorer plus the full report
-site/          what it is built FROM: the page parts, and data.json
-LOGIC.md       how the pieces fit — the phase map
-METHODS.md     what each diagnostic computes
-decisions/     one record per analytical choice: the question, the diagnostic,
-               the measured cost, the decision, and what would overturn it
-src/           the pipeline
-src/diagnostics/  one named check per decision
-tests/         the claims the report makes, pinned
-figures/       every figure in light and dark variants
+index.html            the deployed site: interactive explorer + the full report.
+                      GENERATED — edit site/, never this.
+
+site/                 what index.html is built from
+  head.html             styles and the page shell
+  explore.html          the interactive scatter of all 775 player-seasons
+  report.html           the report itself: every finding, figure and table
+  app.js.html           explorer behavior — filtering, hover, the detail panel
+  data.json             one record per player-season, written by the pipeline
+
+src/                  the pipeline: raw CSVs in, the style space out
+  paths.py              where things live; nothing else hard-codes a path
+  data.py               loading and scoping — grain, era, player identity
+  features.py           the six behavioral measures, per player-season
+  roles.py              agent → Riot role, and the season's role label
+  style.py              adjust each behavior for quality → the style matrix
+  pca.py                standardize, rotate, fix the sign — fitted in ONE place
+  components.py         how many dimensions beat a Monte Carlo null
+  clusters.py           archetypes or a continuum
+  validate.py           refit on 2023–25, project 2026 cold
+  robustness.py         do the judgment calls change the answer?
+  examples.py           named players who are extreme for their role
+  figures.py            every figure, in light and dark
+  quoted_numbers.py     EVERY number the site quotes, computed from the data
+  publish.py            site/ + figures/ → index.html
+
+  diagnostics/          one-off checks; nothing imports them, they print
+    scope.py              grain, era, player identity
+    screening.py          which behaviors measure style rather than quality
+    role_labels.py        how good the role label is, and what it costs
+
+tests/                the claims the report makes, pinned
+figures/              every figure, light and dark variant
+.github/              CI: the checks that need no raw data, run on every push
+LOGIC.md              how the phases fit together
+METHODS.md            what each diagnostic computes
 ```
 
-Inside `src/`, the pipeline and the diagnostics are separate things.
+### The pipeline
 
 ```
-paths -> data -> features -> roles -> style -> pca -> components
-                                                   -> clusters | validate | robustness
+paths → data → features → roles → style → pca → components
+                                                 ├→ clusters     archetypes or continuum
+                                                 ├→ validate     does 2026 hold up
+                                                 └→ robustness   floor, quality measure, per-round
 ```
 
-`src/diagnostics/` holds the one-off checks behind individual decisions. Nothing
-imports them; they print, and they are read next to the decision file that cites
-them. Each is a named subcommand:
+Every script runs from any working directory and prints its own result. Raw data is not
+committed; `data/raw/` expects the Kaggle dump unpacked by year, and `data.py` says so
+plainly if it is missing.
 
-```bash
-python src/diagnostics/scope.py --list        # grain, era, identity      (01-03)
-python src/diagnostics/screening.py --list    # feature selection         (04-07)
-python src/diagnostics/role_labels.py --list  # how good is the role tag? (07, 11, 14)
-```
+### The one rule this repo is built around
 
-## The site
+**No number in the prose is hand-copied.** `quoted_numbers.py` computes every figure the
+site states, and `tests/test_site.py` fails the build when the site quotes a value the
+pipeline does not produce — naming each one that drifted. The report and the analysis
+cannot disagree without the test suite saying so.
 
-`index.html` is served by GitHub Pages from the repository root. Settings → Pages →
-*Deploy from a branch*, branch `main`, folder `/ (root)`. No build step or workflow.
+The same idea runs through the code. The PCA is fitted in exactly one function, because
+the sign convention was once applied to the loadings and not the scores. The agent→role
+lookup raises on an unknown agent instead of silently dropping it. Corrections are kept
+visible in comments rather than edited away: each says what was wrong, how it surfaced,
+and what now prevents it.
 
-`index.html` is **generated** — edit `site/`, not the built file:
+### The site
 
-```bash
-python src/publish.py data    # site/data.json, from the pipeline
-python src/publish.py page     # site/* + figures/ -> index.html
-```
+`index.html` is served by GitHub Pages from the repository root — no build step. It is
+generated from `site/`, which `publish.py` wraps in a document, expands `FIG_*`
+placeholders into light/dark image pairs, and inlines `data.json` so the page works
+opened straight from disk as well as served.
 
-`src/publish.py page` wraps the parts in a real HTML document, expands each `FIG_*`
-placeholder into a light/dark `<img>` pair pointing at `figures/`, and inlines
-`data.json` so the page also works opened straight from disk — fetching a sibling
-JSON over `file://` is blocked by CORS.
+---
 
-The report lives on the site and nowhere else. It was kept in parallel as a markdown
-file until 2026-09-20; the two copies drifted twice — once on which figures they showed,
-once on nine numbers and a claim about named players — so the duplicate was removed
-rather than maintained.
+## Data
 
-`decisions/` is the point of this repo. Every number in the report traces to a file
-there that says why the choice was made and what would change it — including the
-corrections, which are kept visible rather than edited away.
+[**VALORANT Champion Tour data**](https://www.kaggle.com/datasets/ryanluong1/valorant-champion-tour-2021-2023-data)
+on Kaggle, a mirror of public [vlr.gg](https://www.vlr.gg) match records. The dataset's
+name says 2021–2023; it is maintained past that and carries 2023–2026, which is the
+window used here — the franchised era, chosen so that every team plays every other and
+strength of schedule stops being a confounder.
 
-## Running it
-
-```bash
-git clone <this repo> && cd vct-playstyle
-python -m venv .venv && .venv/bin/pip install -r requirements.txt
-
-python src/data.py             # scoping, grain, identity
-python src/features.py         # the seven behavioural measures
-python src/style.py            # quality adjustment -> style matrix
-python src/components.py       # parallel analysis -> component retention
-python src/clusters.py         # archetypes vs continuum
-python src/validate.py         # held-out 2026
-python src/robustness.py       # do the judgement calls change the answer?
-python src/quoted_numbers.py   # every number the prose quotes
-python src/figures.py          # figures  (FIG_THEME=dark for the dark set)
-python src/publish.py          # site/data.json, then index.html
-pytest                         # the claims above, pinned
-```
-
-Every script runs from any working directory and each one prints its own result;
-`src/quoted_numbers.py report` is the single source of truth for every number in the prose.
-
-Raw data is not committed. `data/raw/` expects the Kaggle dataset unpacked by year,
-so that `data/raw/vct_2023/matches/overview.csv` exists. In this working copy it is a
-symlink to a local copy of the dump; `python src/data.py` says so plainly if the link
-is missing or broken.
+**Snapshot 2026-09-19.** The 2026 season was still running and contains no Champions
+event, so every 2026 figure will move if the source is refreshed.

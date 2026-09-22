@@ -1,4 +1,3 @@
-<title>VCT Playstyle</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 :root{
@@ -28,7 +27,7 @@ body{background:var(--ground);color:var(--ink);margin:0;line-height:1.62;
   font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;}
 .wrap{max-width:1120px;margin:0 auto;padding:0 16px;padding-block:32px 56px}
 .col{max-width:70ch}
-/* The report is a centred reading column; figures and wide tables break out.
+/* The report is a centered reading column; figures and wide tables break out.
    Left-aligning a 70ch column inside a 1120px wrapper leaves dead space beside it. */
 #vReport{display:grid;grid-template-columns:minmax(0,1fr);justify-items:center}
 #vReport>*{width:100%;max-width:730px}          /* one reading edge for every block */
@@ -55,12 +54,13 @@ pre b{color:var(--ink);font-weight:600}
 /* Result tables, styled the way pandas renders a DataFrame in a notebook: a rule
    above and below the header, one under the last row, no vertical lines, a bold
    left-aligned index and right-aligned numbers. */
-/* Centred with `margin:auto` on the flex item, NOT justify-content: a table wider
+/* Centered with `margin:auto` on the flex item, NOT justify-content: a table wider
    than the column (the floor sweep) stays scrollable to its left edge that way,
    where justify-content would clip it there with no way to reach it. */
-.df{overflow-x:auto;margin:0 0 18px;-webkit-overflow-scrolling:touch;display:flex}
-.df>table{flex:0 0 auto;margin:auto}
-.df table{border-collapse:collapse;width:auto;margin-inline:auto;margin-block:0;
+.df{margin:0 0 18px;max-width:100%}
+.df>table{width:100%;max-width:100%}
+.df table{border-collapse:collapse;width:100%;margin-inline:0;margin-block:0;
+  table-layout:auto;
   font-family:"IBM Plex Mono",monospace;font-size:12.5px;
   font-variant-numeric:tabular-nums;color:var(--ink)}
 .df thead th{text-align:right;text-transform:none;letter-spacing:0;font-size:12.5px;
@@ -68,10 +68,13 @@ pre b{color:var(--ink);font-weight:600}
   border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
   padding-top:7px;white-space:nowrap}
 .df thead th:first-child{padding-left:0;text-align:left}
+.df tbody th .note{display:block;font-size:11.5px;line-height:1.45;margin-top:2px;
+  white-space:normal;max-width:26ch}
 .df tbody th{text-align:left;text-transform:none;letter-spacing:0;font-size:12.5px;
+  max-width:30ch;
   font-weight:600;color:var(--ink);padding:6px 22px 6px 0;border-bottom:none;
   white-space:nowrap}
-.df tbody td{text-align:right;padding:6px 0 6px 22px;border-bottom:none;
+.df tbody td{text-align:right;padding:6px 0 6px 22px;border-bottom:none;white-space:nowrap;
   color:var(--ink-2);white-space:nowrap}
 .df tbody tr:last-child th,.df tbody tr:last-child td{padding-bottom:9px}
 .df tbody tr:hover td,.df tbody tr:hover th{background:var(--sunken)}
@@ -88,7 +91,7 @@ td{padding:7px 12px 7px 0;border-bottom:1px solid var(--line);color:var(--ink-2)
 td:first-child{color:var(--ink)}
 td.n,th.n{text-align:right;font-family:"IBM Plex Mono",monospace}
 td.n{color:var(--ink);font-weight:500}
-.tbl{overflow-x:auto}
+.tbl{max-width:100%}
 figure{margin:20px 0 22px}
 figure img{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--surface);display:block}
 figcaption{font-size:12px;color:var(--ink-3);margin-top:9px;max-width:none}

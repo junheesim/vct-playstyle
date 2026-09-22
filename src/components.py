@@ -14,7 +14,7 @@ Instead, build a null and keep only what beats it.
 Run PCA on that many times to see how large each eigenvalue gets when there is
 genuinely nothing to find. A component is retained only if it exceeds the 95th
 percentile of the null. (Horn's parallel analysis; the permutation variant is used
-because the features are skewed -- plants .97, first_engagement_gap 1.78 -- so a
+because the features are skewed -- plants .97, clutch_att 1.4 -- so a
 normal null would assume something untrue. The normal null is reported alongside as
 a check.)
 """
@@ -99,20 +99,17 @@ def loadings(cols, k=2):
     Loadings and scores come out of `pca.fit` under one sign convention, so they
     cannot disagree about which direction PC1 points."""
     M = S.build(cols)
-    Z = pca.standardise(M, cols)
+    Z = pca.standardize(M, cols)
     model, flip = pca.fit(Z.values, cols, k)
     return M, pca.loadings(model, flip, cols), pca.scores(model, flip, Z, M.index)
 
 
 if __name__ == "__main__":
-    for label, cols in [("STRICT", F.STRICT), ("STYLE", F.STYLE)]:
-        report(cols, label)
+    report(F.STYLE, "STYLE")
 
     print(f"\n{'='*78}\nWHAT THE TWO COMPONENTS ARE MADE OF\n{'='*78}")
-    for label, cols in [("STRICT", F.STRICT), ("STYLE", F.STYLE)]:
-        _, L, _ = loadings(cols)
-        print(f"\n  {label}")
-        print("   " + L.round(2).to_string().replace("\n", "\n   "))
+    _, L, _ = loadings(F.STYLE)
+    print("   " + L.round(2).to_string().replace("\n", "\n   "))
 
     M, L, sc = loadings(F.STYLE)
     out = pd.concat([M[["handle","year","team","region","role","main_agent"]], sc], axis=1)

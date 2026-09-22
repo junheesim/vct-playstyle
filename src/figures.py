@@ -6,26 +6,30 @@ draws the same 775 points with filtering and hover -- so the static duplicate we
 with it.
 
 Palette: validated categorical slots 1 (blue) and 2 (orange) on the light surface.
-Small multiples use ONE series colour against grey context, so no multi-hue
+Small multiples use ONE series color against gray context, so no multi-hue
 separation question arises.
 """
 import os, numpy as np, pandas as pd, matplotlib as mpl
 mpl.use("Agg")
 import matplotlib.pyplot as plt
 import paths
-import features as F, validate as V
+import features as F
 from components import loadings
 
 THEME = os.environ.get("FIG_THEME", "light")
 PFX = "" if THEME == "light" else "dark-"
 if THEME == "dark":
     BLUE, ORANGE = "#3987e5", "#d95926"
-    SURFACE, INK, INK2, GREY = "#181c24", "#f2f4f7", "#a7b1c0", "#39414e"
+    SURFACE, INK, INK2, GRAY = "#181c24", "#f2f4f7", "#a7b1c0", "#39414e"
     GRID, EDGE, RULE = "#252b35", "#3a4350", "#5a6472"
+    # text that sits ON a blue/orange fill. The fills are mid-tone in BOTH themes, so
+    # this cannot follow the surface: one dark ink clears 4.1:1 on all four fills.
+    ONFILL = "#12151a"
 else:
     BLUE, ORANGE = "#2a78d6", "#eb6834"
-    SURFACE, INK, INK2, GREY = "#fcfcfb", "#0b0b0b", "#52514e", "#d8d7d2"
+    SURFACE, INK, INK2, GRAY = "#fcfcfb", "#0b0b0b", "#52514e", "#d8d7d2"
     GRID, EDGE, RULE = "#ececea", "#c9c8c3", "#9a9994"
+    ONFILL = "#12151a"
 mpl.rcParams.update({
     "figure.facecolor": SURFACE, "axes.facecolor": SURFACE,
     "text.color": INK, "axes.labelcolor": INK2, "axes.edgecolor": EDGE,
@@ -42,7 +46,7 @@ def fig1b_roles(D):
     fig, axes = plt.subplots(1, 4, figsize=(12, 3.2), sharex=True, sharey=True)
     for ax, r in zip(axes, roles):
         s_ = D[D.role == r]
-        ax.scatter(D.PC1, D.PC2, s=8, c=GREY, lw=0, zorder=1)
+        ax.scatter(D.PC1, D.PC2, s=8, c=GRAY, lw=0, zorder=1)
         ax.scatter(s_.PC1, s_.PC2, s=10, c=BLUE, lw=.4, edgecolor=SURFACE, zorder=2)
         ax.set_title(f"{r}  (n={len(s_)})", fontsize=9.5, color=INK, pad=6)
         ax.axvline(0, color=EDGE, lw=.8, zorder=0)
@@ -56,7 +60,15 @@ def fig1b_roles(D):
 
 
 def fig2_validation(H):
-    """Held-out: 2025 position vs 2026 position, model never saw 2026."""
+    """Does a player keep their position from one season to the next?
+
+    Was a held-out plot: fitted on 2023-25, 2026 projected cold. That framing went,
+    because the test could not fail -- dropping one year of four moves a rotation by
+    about .01 against a criterion of .15, and the 2025 half of every pair sat inside
+    the training data regardless. This is the same scatter under the model the rest of
+    the report uses, and it makes the claim the section actually supports: a player's
+    position is a stable property of the player.
+    """
     a = H[H.year == 2025].set_index("player_id"); b = H[H.year == 2026].set_index("player_id")
     j = a.index.intersection(b.index)
     fig, axes = plt.subplots(1, 2, figsize=(7.6, 3.8))
@@ -68,95 +80,183 @@ def fig2_validation(H):
         ax.set_xlim(lim); ax.set_ylim(lim)
         ax.set_xlabel("2025"); ax.set_title(f"{name}    r = {x.corr(y):.2f}",
                                             fontsize=10, color=INK, pad=7)
-    axes[0].set_ylabel("2026  (never seen by the model)")
-    fig.suptitle("Style position holds in a year the model never saw",
+    axes[0].set_ylabel("2026")
+    fig.suptitle("A player lands in much the same place a season later",
                  fontsize=12.5, color=INK, y=1.10, x=.02, ha="left")
-    fig.text(.02, 1.01, f"n={len(j)} players. Quality adjustment, scaling and rotation "
-             "all fitted on 2023–2025 only.", fontsize=8.5, color=INK2, ha="left")
+    fig.text(.02, 1.01, f"One dot is one of the {len(j)} players who appear in both seasons. "
+             "The line is where a player who did not move at all would sit.",
+             fontsize=8.5, color=INK2, ha="left")
     fig.savefig(paths.FIGURES / f"{PFX}2-held-out.png"); plt.close(fig)
 
 
 def fig3_axes(D, raw):
-    """What the axes mean, in the game's own units."""
-    UN = {"hs": "headshot %", "assists": "assists / map", "plants": "plants / map",
-          "clutch_att": "clutches / map", "first_engagement": "opening duels / map",
-          "deaths": "deaths / map"}
-    fig, axes = plt.subplots(1, 2, figsize=(11.5, 3.6))
-    fig.subplots_adjust(wspace=.62)
-    for ax, pc, name in zip(axes, ["PC1", "PC2"], ["aggression", "isolation / gunplay"]):
-        q = pd.qcut(D[pc].values, 5, labels=False)
-        lo = raw.loc[q == 0, list(UN)].mean(); hi = raw.loc[q == 4, list(UN)].mean()
-        rel = ((hi - lo) / raw[list(UN)].std()).sort_values()
-        ypos = np.arange(len(rel))
-        ax.barh(ypos, rel.values, height=.55,
-                color=[ORANGE if v < 0 else BLUE for v in rel.values], lw=0)
-        ax.set_yticks(ypos); ax.set_yticklabels([UN[i] for i in rel.index])
-        for y, v, k in zip(ypos, rel.values, rel.index):
-            ax.text(v + (.07 if v > 0 else -.07), y, f"{lo[k]:.1f} → {hi[k]:.1f}",
-                    va="center", ha="left" if v > 0 else "right", fontsize=8, color=INK2)
-        ax.axvline(0, color=RULE, lw=1)
-        ax.set_xlim(rel.min() - 1.9, rel.max() + 1.9)
-        ax.set_xlabel("change from bottom fifth to top fifth (sd)")
-        ax.set_title(name, fontsize=10.5, color=INK, pad=7)
-        ax.grid(axis="y", visible=False)
-    fig.suptitle("What each axis actually measures", fontsize=12.5, color=INK,
-                 y=1.11, x=.06, ha="left")
-    fig.text(.06, 1.02, "Bar length is standardised so the two panels compare; the label gives the "
-             "real per-map value, bottom fifth → top fifth.",
-             fontsize=8.5, color=INK2, ha="left")
-    fig.savefig(paths.FIGURES / f"{PFX}3-axes.png"); plt.close(fig)
+    """What each axis is a collective measure OF -- its recipe, not its consequences.
+
+    One bar per axis, split into the six behaviors by how much each contributes to
+    it. Everything to the right of the center line pushes the axis up; everything to
+    the left pushes it down; the segments of one bar sum to 100%.
+
+    Earlier versions plotted what high-scoring players DO differently, in standard
+    deviations and then in percent. Both answered "what follows from being high on
+    this axis" when the question is "what is this axis made of". A part-to-whole
+    question wants a part-to-whole chart.
+    """
+    _, L, _ = loadings(F.STYLE)
+    UN = F.UNITS
+    fig, ax = plt.subplots(figsize=(10.4, 3.9))
+    deep = 0                                     # alternate the depth of outside labels
+
+    for i, (pc, name) in enumerate([("PC1", "aggression"), ("PC2", "isolation / gunplay")]):
+        w = L[pc]
+        # SQUARED weights, which is the standard contribution of a variable to a
+        # component and the only version for which "the blocks add up to the whole
+        # axis" is literally true: a component's weight vector has unit length, so
+        # the squares sum to 1 by construction. Dividing |w| by the sum of |w| also
+        # yields something that sums to 100, but only because it was made to.
+        share = w**2 / (w**2).sum() * 100
+        y = 1 - i
+        for sign, color in ((+1, BLUE), (-1, ORANGE)):
+            part = share[np.sign(w) == sign].sort_values(ascending=False)
+            edge = 0.0                           # distance from the center line so far
+            for k, v in part.items():
+                # both sides stack OUTWARD from 0: left = -(edge+v) going left,
+                # left = edge going right. Always a positive width.
+                ax.barh(y, v, left=(edge if sign > 0 else -(edge + v)), height=.52,
+                        color=color, lw=1.4, edgecolor=SURFACE, zorder=2)
+                mid = sign * (edge + v / 2)
+                if v >= 8:                       # fits inside the segment
+                    ax.text(mid, y + .085, UN[k].split(" /")[0], ha="center", va="center",
+                            fontsize=8.6, color=ONFILL, zorder=3)
+                    ax.text(mid, y - .095, f"{v:.0f}%", ha="center", va="center",
+                            fontsize=8.6, color=ONFILL, zorder=3, fontweight="bold")
+                else:                            # too thin -- label it outside
+                    d = .50 + .20 * (deep % 2)   # stagger, or two thin blocks collide
+                    deep += 1
+                    ax.annotate(f"{UN[k].split(' /')[0]} {v:.0f}%",
+                                xy=(mid, y - .27), xytext=(mid, y - d),
+                                ha="center", va="top", fontsize=8, color=INK2,
+                                arrowprops=dict(arrowstyle="-", color=EDGE, lw=.8,
+                                                shrinkA=0, shrinkB=2))
+                edge += v
+
+    ax.axvline(0, color=INK, lw=1.2, zorder=4)
+    ax.set_yticks([1, 0])
+    ax.set_yticklabels(["aggression", "isolation /\ngunplay"], fontsize=11, color=INK)
+    ax.set_xlim(-62, 78); ax.set_ylim(-.95, 1.55)
+    ax.set_xticks([]); ax.grid(False)
+    for sp in ("left", "bottom"):
+        ax.spines[sp].set_visible(False)
+    ax.tick_params(axis="y", length=0)
+    ax.text(31, 1.48, "these push the axis UP", ha="center", fontsize=8.6, color=BLUE)
+    ax.text(-31, 1.48, "these push it DOWN", ha="center", fontsize=8.6, color=ORANGE)
+    fig.suptitle("What each axis is made of", fontsize=12.5, color=INK, y=1.12, x=.01, ha="left")
+    fig.text(.01, 1.04, "Each axis is one number combining all six behaviors. The width of a "
+             "block is how much of that axis the behavior\naccounts for; the six blocks of a bar "
+             "add up to the whole axis.", fontsize=8.5, color=INK2, ha="left", va="top",
+             linespacing=1.5)
+    fig.savefig(paths.FIGURES / f"{PFX}3-axes.png", bbox_inches="tight"); plt.close(fig)
 
 
 def fig4_kd(D):
-    """Entry fragging costs deaths AND earns damage. In K/D they cancel.
+    """Does entering less come with a better kill-death ratio? One panel, not three.
 
-    Only aspas is highlighted, in both panels, with a leader line -- the earlier
-    version scattered unexplained blue and orange dots across two panels and labelled
-    them in one, which told the reader nothing about which dot was whom.
+    It used to be three scatters -- deaths, damage and K/D against opening duels --
+    which illustrated the cancelling mechanism but never tested the accusation. The
+    accusation is about one player, so the figure now shows the comparison that
+    answers it: every duelist, the ones who enter even less than aspas picked out, and
+    aspas himself. If avoiding the first fight were what produced his ratio, the cloud
+    would slope down and he would sit on that slope.
 
-    The population is the 149 guarded duelist-seasons -- the same set the percentiles
-    in the report are taken against. It used to carry an extra `maps >= 30` filter,
-    which quietly made the chart's correlations (n=107) disagree with the prose's.
+    aspas is ONE point, his four-season average, because the comparison group is
+    defined against that average. Plotting his four seasons separately put three of
+    them on the wrong side of the line that was drawn to separate them.
     """
     du = D[(D.role == "duelist") & D.label_ok]
-    a_ = du[du.handle == "aspas"]
-    panels = [("deaths", "deaths per map", "THE COST", "more entries, more deaths"),
-              ("adr", "damage per round (ADR)", "THE GAIN", "more entries, more damage")]
-    fig, axes = plt.subplots(1, 2, figsize=(10.4, 4.6))
-    fig.subplots_adjust(wspace=.3)
-    for ax, (col, ylab, tag, sub) in zip(axes, panels):
-        ax.scatter(du.first_engagement, du[col], s=20, c=GREY, lw=0, zorder=1)
-        b0, a0 = np.polyfit(du.first_engagement, du[col], 1)
-        xs = np.linspace(du.first_engagement.min(), du.first_engagement.max(), 2)
-        ax.plot(xs, a0 + b0 * xs, color=RULE, lw=2, zorder=2)
-        ax.scatter(a_.first_engagement, a_[col], s=52, c=ORANGE, lw=1.2,
-                   edgecolor=SURFACE, zorder=4)
-        r = du.first_engagement.corr(du[col])
-        ax.set_title(f"{tag}   \u00b7   {sub}   \u00b7   r = {r:+.2f}",
-                     fontsize=10, color=INK, pad=9, loc="left")
-        ax.set_xlabel("opening duels taken per map  \u2192")
-        ax.set_ylabel(ylab)
+    a = D[D.handle == "aspas"]
+    fe_a, kd_a = a.first_engagement.mean(), a.kd_ratio.mean()
+    low = du[du.first_engagement < fe_a]
 
-    # one highlighted player needs a key, not a label with a leader line
-    fig.text(.02, -.02, "\u25cf", fontsize=10, color=ORANGE, ha="left", va="top")
-    fig.text(.042, -.018, "aspas", fontsize=9, color=INK, weight="bold", ha="left", va="top")
-    # two decimals, because the report's table and callout quote these to two and a
-    # 1dp rounding here read 7.0 against the prose's 6.95
-    fig.text(.085, -.018, f"all four seasons, 2023\u20132026 \u00b7 "
-             f"{a_.first_engagement.mean():.2f} opening duels and "
-             f"{a_.deaths.mean():.2f} deaths per map, against a duelist average of "
-             f"{du.first_engagement.mean():.2f} and {du.deaths.mean():.2f}",
-             fontsize=8.6, color=INK2, ha="left", va="top")
+    fig, ax = plt.subplots(figsize=(8.2, 4.6))
+    ax.axvspan(du.first_engagement.min() - .45, fe_a, color=ORANGE, alpha=.06, zorder=0)
+    ax.scatter(du.first_engagement, du.kd_ratio, s=26, c=GRAY, lw=.5,
+               edgecolor=SURFACE, zorder=2, label=f"{len(du)} duelist-seasons")
+    ax.scatter(low.first_engagement, low.kd_ratio, s=26, c=ORANGE, lw=.5,
+               edgecolor=SURFACE, zorder=3, label=f"the {len(low)} who enter less than aspas")
+    ax.scatter([fe_a], [kd_a], s=78, c=BLUE, lw=1.3, edgecolor=SURFACE, zorder=5,
+               label="aspas, four seasons averaged")
 
-    fig.suptitle("Entry fragging is K/D-neutral: it costs deaths and earns damage",
-                 fontsize=12.5, color=INK, y=1.19, x=.02, ha="left")
-    r_kd = du.first_engagement.corr(du.kd_ratio)
-    fig.text(.02, 1.08, f"Each grey dot is one of the {len(du)} duelist-seasons with a "
-             f"solid role label. The two effects pull K/D in opposite directions and "
-             f"cancel:\nr(opening duels, K/D) = {r_kd:+.2f}, so K/D cannot tell you "
-             f"whether a duelist takes the first fight.",
-             fontsize=8.5, color=INK2, ha="left", linespacing=1.5)
-    fig.savefig(paths.FIGURES / f"{PFX}4-kd-hides.png"); plt.close(fig)
+    ax.axhline(du.kd_ratio.mean(), color=RULE, lw=1, ls=(0, (4, 3)), zorder=1)
+    ax.text(du.first_engagement.max() + .1, du.kd_ratio.mean() - .012,
+            f"all duelists  {du.kd_ratio.mean():.2f}", ha="right", va="top",
+            fontsize=8.2, color=INK2, zorder=6)
+    # the orange line is identified in the legend rather than by floating text, and
+    # aspas needs no annotation -- the legend already says what the blue point is.
+    ax.plot([du.first_engagement.min() - .45, fe_a], [low.kd_ratio.mean()] * 2,
+            color=ORANGE, lw=1.4, ls=(0, (4, 3)), zorder=4,
+            label=f"their average K/D, {low.kd_ratio.mean():.2f}")
+
+    ax.set_xlabel("opening duels taken per map")
+    ax.set_ylabel("kills \u00f7 deaths")
+    ax.set_xlim(du.first_engagement.min() - .45, du.first_engagement.max() + .35)
+    ax.grid(axis="x", visible=False)
+    ax.legend(loc="lower right", frameon=False, fontsize=8.6, handletextpad=.4,
+              borderaxespad=.4, labelcolor=INK2)
+    fig.suptitle("Entering less does not come with a better kill-death ratio",
+                 fontsize=12.5, color=INK, y=1.10, x=.015, ha="left")
+    fig.text(.015, 1.035, "If avoiding the first fight were what produced a high ratio, this "
+             "cloud would slope downwards and aspas would sit\non that slope. It does not, and "
+             "he does not.", fontsize=8.5, color=INK2, ha="left", va="top", linespacing=1.5)
+    fig.savefig(paths.FIGURES / f"{PFX}4-kd-hides.png", bbox_inches="tight"); plt.close(fig)
+
+
+def fig5_archetypes(D):
+    """What three real types would look like, next to what the data looks like.
+
+    The section used to argue this with a table of separation values -- 0.37 for the
+    real players against 0.32 for a cloud with nothing in it and 0.53 for three
+    genuine types. All correct, and unreadable: nobody has intuitions about a
+    silhouette score. The shape of the data settles it without a number, so the
+    number becomes a caption on a picture instead of the argument itself.
+
+    Same axes, same n, same spread in all three panels. Only the grouping differs.
+    """
+    from clusters import null_like, separation
+    X = D[["PC1", "PC2"]].values
+    rng = np.random.default_rng(0)
+    sd = float(X.std(0).mean())
+    d = 2.80                                  # the duelist-to-initiator gap, decision 12
+    cen = np.array([[-d*sd, 0.0], [0.0, d*sd*.87], [d*sd, 0.0]])
+    lab = rng.integers(0, 3, len(X))
+    types = cen[lab] + rng.normal(scale=sd, size=(len(X), 2))
+    cloud = null_like(X, seed=0)
+
+    panels = [(cloud, "simulated: no grouping", "one draw from the Monte Carlo null"),
+              (X,     "the real players",       "775 player-seasons"),
+              (types, "simulated: three types",  "as far apart as duelists are from initiators")]
+    fig, axes = plt.subplots(1, 3, figsize=(11.4, 4.3))
+    fig.subplots_adjust(top=.80, left=.02, right=.99, wspace=.10)
+    for ax, (P, name, sub) in zip(axes, panels):
+        # measure on the data as it is; standardize only for DRAWING, so the three
+        # panels share a frame and the numbers still match the ones in the prose.
+        sep = separation(P, 3)
+        Q = (P - P.mean(0)) / P.std(0)
+        ax.scatter(Q[:, 0], Q[:, 1], s=9, c=BLUE if name.startswith("the real") else GRAY,
+                   lw=0, alpha=.75, zorder=2)
+        ax.set_title(name, fontsize=10.5, color=INK, pad=24)
+        ax.text(.5, 1.028, sub, transform=ax.transAxes, ha="center", va="bottom",
+                fontsize=8.2, color=INK2)
+        ax.text(.5, -.09, f"separation {sep:.2f}", transform=ax.transAxes,
+                ha="center", fontsize=9.5, color=INK)
+        ax.set_xticks([]); ax.set_yticks([]); ax.grid(False)
+        ax.set_xlim(-4.2, 4.2); ax.set_ylim(-4.2, 4.2)
+        for sp in ax.spines.values():
+            sp.set_visible(True); sp.set_color(EDGE)
+    fig.suptitle("What three real types would look like", fontsize=12.5, color=INK,
+                 y=1.22, x=.012, ha="left")
+    fig.text(.012, 1.14, "The data sits between two simulations. The number under each panel is "
+             "the same measurement, and it is the evidence.", fontsize=8.5, color=INK2,
+             ha="left", va="top")
+    fig.savefig(paths.FIGURES / f"{PFX}5-archetypes.png", bbox_inches="tight"); plt.close(fig)
 
 
 if __name__ == "__main__":
@@ -165,10 +265,9 @@ if __name__ == "__main__":
     raw = (M[["player_id","year"]]
              .merge(F.seasons(F.build()), on=["player_id","year"], how="left")
              .reset_index(drop=True))
-    H, _, _ = V.fit_and_project(F.STYLE)
-    fig2_validation(H); fig3_axes(D, raw)
+    fig2_validation(D); fig3_axes(D, raw)
     from examples import guarded
     G = guarded().merge(F.seasons(F.build()), on=["player_id","year"], how="left",
                         suffixes=("","_r"))  # carries raw per-map stats for the key
-    fig1b_roles(G); fig4_kd(G)
+    fig1b_roles(G); fig4_kd(G); fig5_archetypes(D)
     print(f"wrote 4 figures, theme={THEME}")

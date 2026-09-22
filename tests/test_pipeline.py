@@ -3,6 +3,7 @@
 These pin the claims the report makes. If the data source is refreshed and one of
 them moves, that is information, not a nuisance -- the prose has to move with it.
 """
+import pandas as pd
 import pytest
 
 import data as D
@@ -43,14 +44,14 @@ def test_headline_scope(M):
 
 
 def test_two_components_survive_the_null(M):
-    X = pca.standardise(M, F.STYLE).values
+    X = pca.standardize(M, F.STYLE).values
     assert int((eigenvalues(X) > null_cutoffs(X, "shuffle", n=200)).sum()) == 2
 
 
 def test_pc1_is_the_aggression_axis(M):
     """The report calls PC1 aggression. That is only legitimate while opening duels
     load positively on it and most strongly."""
-    Z = pca.standardise(M, F.STYLE)
+    Z = pca.standardize(M, F.STYLE)
     model, flip = pca.fit(Z.values, F.STYLE)
     L = pca.loadings(model, flip, F.STYLE).PC1
     assert L["first_engagement"] > 0
@@ -78,7 +79,7 @@ def test_the_map_floor_is_fifteen():
 
 
 def test_role_shares_are_denominated_over_every_map():
-    """A map on an agent outside the role taxonomy is not a map in the labelled role.
+    """A map on an agent outside the role taxonomy is not a map in the labeled role.
     Dropping it from the denominator overstated role_share by up to 28% of a season,
     enough to push four player-seasons over the 70% label guard they should fail."""
     from roles import shares, ROLES
@@ -89,7 +90,7 @@ def test_role_shares_are_denominated_over_every_map():
 
 def test_label_guard_is_exactly_the_role_share_rule():
     """One condition since decision 16: did the player actually spend most of the
-    season in the role they are labelled with."""
+    season in the role they are labeled with."""
     G = guarded()
     assert (G.label_ok == (G.role_share >= .70)).all()
 
@@ -108,3 +109,54 @@ def test_role_is_the_modal_role_not_the_modal_agents_role(maps):
     assert w.role_share.median() > 0.75
     # and it really is a different label from the one it replaced
     assert (w.role != role_of(w.main_agent)).sum() > 0
+
+
+def test_round_counts_are_one_row_per_team_per_map(maps):
+    """Decision 18. `round_counts` stacks each map once per team, so a map appears
+    twice -- counting map lengths off it unchecked doubles the n, which is decision
+    01's mistake one level down."""
+    rc = F.round_counts()
+    assert rc.duplicated(D.MATCH + ["Map", "Team"]).sum() == 0
+    assert len(rc) == 2 * rc.drop_duplicates(D.MATCH + ["Map"]).shape[0]
+    # regulation only: overtime is recorded in a separate column and alternates sides
+    both = rc.dropna(subset=["rounds", "atk", "dfd"])
+    assert (both.atk + both.dfd <= both.rounds).all()
+
+
+def test_map_length_does_not_vary_between_players(maps):
+    """Decision 18. A map runs 13 to 48 rounds, but a season averages 37 of them, so
+    the opportunity count is the same constant for every player. This is what lets
+    the features stay per map instead of per round."""
+    d = maps.merge(F.round_counts(), on=D.MATCH + ["Map", "Team"], how="left")
+    assert d.rounds.notna().mean() > .98
+    ps = F.seasons(d)
+    season_mean = d.groupby(["player_id", "year"]).rounds.mean()
+    season_mean = season_mean[season_mean.index.isin(
+        pd.MultiIndex.from_frame(ps[["player_id", "year"]]))]
+    assert d.rounds.std() > 3.0          # it really does vary, per MAP
+    assert season_mean.std() < 1.0       # and really does not, per SEASON
+
+
+def test_per_round_features_put_players_in_the_same_place(M):
+    """Decision 18. The published features are per-map counts. Rebuilding them as
+    per-round rates must not move anyone, or the axis is partly an opportunity
+    count rather than a style."""
+    from robustness import per_round_frame, _fit
+    A = M.set_index(["player_id", "year"])
+    B, _ = _fit(per_round_frame())
+    B = B.set_index(["player_id", "year"])
+    j = A.index.intersection(B.index)
+    assert len(j) > 750
+    base = _fit(F.build())[0].set_index(["player_id", "year"])
+    assert base.loc[j, "PC1"].corr(B.loc[j, "PC1"]) > .98
+    assert base.loc[j, "PC2"].corr(B.loc[j, "PC2"]) > .98
+
+
+def test_report_and_decisions_both_run(capsys):
+    """`quoted_numbers` is the single source for every number the site quotes, and
+    nothing was calling its printers. A refactor left `report` unpacking three values
+    from a five-value return for several commits, and the suite stayed green."""
+    import quoted_numbers as Q
+    Q.report(); Q.decisions()
+    out = capsys.readouterr().out
+    assert "ARCHETYPES" in out and "DECISION 18" in out

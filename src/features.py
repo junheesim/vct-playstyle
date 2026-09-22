@@ -12,50 +12,43 @@ import pandas as pd
 import data as D
 
 # ---------------------------------------------------------------- decision 04
-# Clean on all five screening tests (see decisions/07).
+# THE feature set. One list, not two.
 #
-# `deaths` was here until decision 17 and is not any more. It passed every screening
-# test, but it is an OUTCOME -- the count of fights you lost -- and the rule the rest
-# of the set was chosen by is "count the situations, don't score the outcomes". It was
-# also near-redundant: adjusted for quality it correlates +.74 with first_engagement,
-# and dropping it moves every player by r = .987.
-STRICT = ["first_engagement", "hs", "assists", "plants", "creds_per_round"]
+# There were two -- STRICT (5) and STYLE (7) -- because two features were contested
+# and decision 07 committed to running Phase 4 under both. Decision 19 collapsed them:
+# `first_engagement_gap` is gone, and `clutch_att` is simply a feature now rather than
+# a special case carried with an escort. Two named sets was overhead the reader paid
+# for and the analysis no longer needs.
+#
+# Dropped and why:
+#   deaths                (decision 17) an OUTCOME -- the count of fights lost -- where
+#                         the rule is to measure the tendency, not whether it went well.
+#   first_engagement_gap  (decision 19) attack-minus-defend opening duels. Only 4 of the
+#                         7 behaviors CAN be split by side -- plants, creds and clutches
+#                         come from kills_stats, which has no Side column -- so it gave
+#                         one behavior a dimension the others could not have. Second
+#                         weakest reliability in the set, and a difference of raw counts
+#                         rather than a rate per side-round (decision 18). Removing it
+#                         moves every player by r = .982 and costs no coverage at all:
+#                         775 player-seasons either way.
+STYLE = ["first_engagement", "hs", "assists", "plants", "creds_per_round", "clutch_att"]
 
-# clutch_att: new-team stability .14 (interval includes 0), but role-independent
-# (R2 .110) and 80% unique. Junhee's construct -- last alive => baiting, or anchoring
-# and rotating late. Confirmed by 32 of 203 duelists clutching more than the average
-# sentinel (diagnostics/role_labels.py independence). Kept, but see decisions/07: its
-# new-team stability is .009 on 104 movers, so it travels with the roster. STRICT drops
-# it and lands players in the same place (PC1 r .978), so nothing rests on the call.
-# decision 09: attack-minus-defend opening duels. Separates the entry duelist who
-# opens on attack from the aggressive defender. Only first_engagement has a persistent
-# side asymmetry (.458); the other splittable features' gaps are noise (.06-.16).
-SIDED = ["first_engagement_gap"]
+# Readable name and unit per feature, for figures and prose.
+#
+# Keyed on STYLE and asserted against it, so a feature cannot enter or leave the set
+# without this moving with it. Two hand-maintained copies of this mapping used to
+# live in `figures.py` and `quoted_numbers.py`; decision 17 dropped `deaths` and
+# neither copy noticed, so a figure captioned "what each axis actually measures"
+# showed a column that is not a model input and hid two that are.
+UNITS = {"first_engagement": "opening duels / map",
+         "hs":               "headshot %",
+         "assists":          "assists / map",
+         "plants":           "plants / map",
+         "creds_per_round":  "credits / round",
+         "clutch_att":       "clutches / map"}
 
-STYLE = STRICT + ["clutch_att"] + SIDED
-
-# No thresholds are applied anywhere. Verdicts are hand-written in decisions/07, and
-# Phase 4 is run under BOTH sets to show the choice is not load-bearing.
-# Empty since decision 07 closed: every candidate is now either in STYLE or in DROPPED.
-# Kept because steps 05, 08 and 09 print STYLE + PENDING, and it is the slot a new
-# candidate feature goes into while it is being screened.
-PENDING = []
-
-# Read by nothing; kept as the record of what was considered and rejected, in the
-# same file as what was kept, so the two cannot drift apart.
-DROPPED = {"econ":   "r with K/D high; vlr Econ is damage per 1000 credits, an "
-                     "EFFICIENCY ratio, not spending. Replaced by creds_per_round.",
-           "kast":   "r=+.45 with the K/D yardstick -- it tracks how good the player "
-                     "is. Separately, 62% of it is explained by Kills+Assists+Deaths, "
-                     "two of which are already features. Trading, the part worth "
-                     "having, is not separable and is not measurable in this dataset.",
-           "acs":    "quality. Was the yardstick until decision 06; kept as a column "
-                     "for comparison only.",
-           "adr":    "quality, r=.97 with ACS.",
-           "Rating": "quality; heavily death-penalizing (r=-.45 with deaths), which "
-                     "points its bend straight at the style set.",
-           "Kills":  "quality.",
-           "2k-5k":  "quality (multikills)."}
+assert set(UNITS) == set(STYLE), \
+    f"UNITS must name exactly STYLE: {set(UNITS) ^ set(STYLE)}"
 
 # ---------------------------------------------------------------- decision 06
 QUALITY = "kd_ratio"     # a RATE, so fight volume cancels. See decisions/06.
@@ -63,7 +56,10 @@ QUALITY = "kd_ratio"     # a RATE, so fight volume cancels. See decisions/06.
 # Everything averaged per season. Beyond STYLE + SIDED these are carried as columns
 # for reference and comparison only; nothing downstream models them. `deaths` moved
 # into this group in decision 17 -- still reported, no longer a feature.
-ALL = STRICT + ["clutch_att", "deaths", "defuses", "kast", "econ", "acs", "adr"]
+# `deaths` and `first_engagement_gap` are carried as columns and reported, but are
+# not features -- see the note above. The rest are here for comparison only.
+ALL = STYLE + ["deaths", "defuses", "kast", "econ", "acs", "adr"]
+SIDED = ["first_engagement_gap"]
 
 
 def pct(s):  # vlr writes percentages as '68%'
@@ -128,6 +124,38 @@ def side_gaps() -> pd.DataFrame:
     return (w["attack"] - w["defend"]).rename("first_engagement_gap").reset_index()
 
 
+def round_counts() -> pd.DataFrame:
+    """Rounds played, per team per map, split by side.  decision 18.
+
+    A map is first to 13, so it runs 13 to 48 rounds. Every per-map COUNT feature is
+    therefore a rate multiplied by an opportunity count, and this is the column that
+    prices that.
+
+    Deliberately NOT merged into `build()`. Decision 18 keeps the published features
+    per map, having measured that the opportunity count does not vary between players;
+    this exists so `robustness.py rounds` can rebuild the alternative and show it.
+
+    `atk` and `dfd` are REGULATION rounds only -- overtime alternates sides and vlr
+    records it in one combined column -- so atk + dfd <= rounds.
+    """
+    ms = D._stack("maps_scores")
+    ms = ms[ms.Map != "All Maps"].copy()
+    for c in ["Team A Score", "Team B Score", "Team A Attacker Score",
+              "Team A Defender Score", "Team B Attacker Score", "Team B Defender Score"]:
+        ms[c] = pd.to_numeric(ms[c], errors="coerce")
+    ms["rounds"] = ms["Team A Score"] + ms["Team B Score"]
+
+    def side(x, y):
+        """One team's view: its attacking rounds are the ones IT won attacking plus
+        the ones the opponent won defending."""
+        return ms.assign(Team=ms[f"Team {x}"],
+                         atk=ms[f"Team {x} Attacker Score"] + ms[f"Team {y} Defender Score"],
+                         dfd=ms[f"Team {x} Defender Score"] + ms[f"Team {y} Attacker Score"])
+
+    return pd.concat([side("A", "B"), side("B", "A")])[
+        D.MATCH + ["Map", "Team", "rounds", "atk", "dfd"]]
+
+
 def map_results() -> pd.DataFrame:
     """Did the player's team win this map? Used for team strength, and as an
     independent quality check that cannot be padded by individual stats."""
@@ -142,7 +170,7 @@ def map_results() -> pd.DataFrame:
 
 
 def seasons(d: pd.DataFrame, min_maps: int = D.MIN_MAPS) -> pd.DataFrame:
-    """One row per player-season: feature means, the quality yardstick, team win rate."""
+    """One row per player-season: feature means, the quality measure, team win rate."""
     g = d.groupby(["player_id", "year"])
     out = g[ALL + SIDED].mean()
     out["maps"]     = g.size()
@@ -176,7 +204,13 @@ def reliability(d: pd.DataFrame, col: str, ps: pd.DataFrame, n_splits: int = 200
         if w.shape[1] < 2 or len(w) < 30:
             continue
         r = w[0].corr(w[1])
-        if pd.notna(r) and r > 0:
+        # No `r > 0` filter. Discarding the splits that come out negative truncates
+        # the distribution from below, so the median and the 5th percentile both read
+        # HIGH -- and reliability is the quantity every disattenuation divides by, so
+        # an inflated estimate quietly shrinks every corrected stability. The filter
+        # never fired on this data (0 of 200 splits for every feature in the set),
+        # which is exactly why it could sit here unnoticed.
+        if pd.notna(r):
             out.append(2*r / (1 + r))
     if not out:
         return np.nan, np.nan, np.nan
@@ -188,8 +222,7 @@ if __name__ == "__main__":
     d  = build()
     ps = seasons(d)
     print(f"{len(ps)} player-seasons | map result joined {d.won.notna().mean():.1%}")
-    print(f"\nSTRICT ({len(STRICT)}): {', '.join(STRICT)}")
-    print(f"STYLE  ({len(STYLE)}): + {', '.join(set(STYLE)-set(STRICT))}")
+    print(f"\nFEATURES ({len(STYLE)}): {', '.join(STYLE)}")
     print(f"QUALITY: {QUALITY}\n")
     print(ps[STYLE + [QUALITY, "team_win"]].describe().loc[
           ["count","mean","std"]].round(2).to_string())

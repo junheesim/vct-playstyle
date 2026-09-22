@@ -20,7 +20,7 @@ def guarded():
     """Player-seasons whose role label is safe to cite, with within-role positions.
 
     The guard is one condition now: did the player actually spend most of the season
-    in the role they are labelled with. It used to be two, because `role` was the role
+    in the role they are labeled with. It used to be two, because `role` was the role
     of the single most-played AGENT and could disagree with the role the player
     actually played most -- so the first condition tested those two against each
     other. `role` IS the modal role now, and that comparison no longer means anything.

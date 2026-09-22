@@ -61,7 +61,7 @@ def build_data() -> list[dict]:
         rec = {"h": r.handle, "y": int(r.year), "t": r.team, "g": r.region, "r": r.role,
                "x": round(float(r.PC1), 2), "z": round(float(r.PC2), 2)}
         rec |= {k: round(float(r[c]), 2) for k, c in COLS.items()}
-        # `rc` is the map COUNT in the labelled role. The page has no agent-to-role
+        # `rc` is the map COUNT in the labeled role. The page has no agent-to-role
         # lookup, so it cannot count these itself, and recovering it from the rounded
         # `rs` would be luck rather than arithmetic.
         rec |= {"m": int(r.maps),
@@ -75,16 +75,34 @@ SITE = paths.SITE
 OUT  = paths.ROOT / "index.html"
 
 FIG = {"FIG_3axes": "3-axes", "FIG_1broles": "1b-roles",
-       "FIG_2heldout": "2-held-out", "FIG_4kd": "4-kd-hides"}
+       "FIG_2heldout": "2-held-out", "FIG_4kd": "4-kd-hides",
+       "FIG_5archetypes": "5-archetypes"}
 
-HEAD = """<!doctype html>
+SITE_URL = "https://junheesim.github.io/vct-playstyle/"
+TITLE    = "Measuring playstyle in professional VALORANT"
+BLURB    = ("775 VCT player-seasons on two measured style dimensions. Riot's four-way "
+            "role taxonomy recovers one of them, and playstyle turns out to be a "
+            "continuum rather than a set of archetypes.")
+
+# Everything here is really inside <head>. `site/head.html` is injected after the
+# </head> tag, so anything put there is in the BODY -- browsers hoist a stray <title>
+# and <style>, but a link preview scraper reads <head> only and would find nothing.
+HEAD = f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Measuring playstyle in professional VALORANT: 775 VCT
-player-seasons on two measured style dimensions, with the full research report.">
-<style>img{max-width:100%}[hidden]{display:none!important}</style>
+<title>{TITLE}</title>
+<meta name="description" content="{BLURB}">
+<link rel="canonical" href="{SITE_URL}">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{TITLE}">
+<meta property="og:description" content="{BLURB}">
+<meta property="og:url" content="{SITE_URL}">
+<meta property="og:image" content="{SITE_URL}figures/3-axes.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{SITE_URL}figures/3-axes.png">
+<style>img{{max-width:100%}}[hidden]{{display:none!important}}</style>
 """
 
 

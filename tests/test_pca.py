@@ -30,7 +30,7 @@ def anchored():
 def test_pc1_always_points_at_the_anchor(anchored):
     cols, up, down = anchored
     for df in (up, down):
-        Z = pca.standardise(df, cols)
+        Z = pca.standardize(df, cols)
         model, flip = pca.fit(Z.values, cols)
         L = pca.loadings(model, flip, cols)
         assert L.loc[pca.ANCHOR, "PC1"] > 0
@@ -41,7 +41,7 @@ def test_loadings_and_scores_share_one_sign(anchored):
     recover its real direction -- which it cannot if only one of the two was flipped."""
     cols, up, down = anchored
     for df in (up, down):
-        Z = pca.standardise(df, cols)
+        Z = pca.standardize(df, cols)
         model, flip = pca.fit(Z.values, cols)
         L, S = pca.loadings(model, flip, cols), pca.scores(model, flip, Z, df.index)
         recon = S["PC1"] * L.loc[pca.ANCHOR, "PC1"]
@@ -51,7 +51,7 @@ def test_loadings_and_scores_share_one_sign(anchored):
 def test_flip_is_exercised_by_the_fixture(anchored):
     """If neither frame triggers a flip the two tests above prove nothing."""
     cols, up, down = anchored
-    flips = {pca.fit(pca.standardise(df, cols).values, cols)[1] for df in (up, down)}
+    flips = {pca.fit(pca.standardize(df, cols).values, cols)[1] for df in (up, down)}
     assert flips == {1.0, -1.0}
 
 
@@ -64,7 +64,7 @@ def test_scores_carry_the_index_they_are_given():
     rng = np.random.default_rng(1)
     cols = [pca.ANCHOR, "b"]
     df = pd.DataFrame(rng.normal(size=(20, 2)), columns=cols).drop(index=[3, 7, 11])
-    Z = pca.standardise(df, cols)
+    Z = pca.standardize(df, cols)
     model, flip = pca.fit(Z.values, cols)
     s = pca.scores(model, flip, Z.values, df.index)
     assert s.index.equals(df.index)

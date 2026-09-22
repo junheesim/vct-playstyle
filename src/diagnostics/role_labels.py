@@ -12,9 +12,10 @@ from _run import main, rule     # first: also puts src/ on the path
 import pandas as pd
 import statsmodels.formula.api as smf
 
+import data as D
 import features as F
 from components import loadings
-from roles import ROLE, ROLES, role_of, shares, with_role
+from roles import ROLE, ROLES, agent_retention, ownership_pairs, role_of, shares, with_role
 
 
 
@@ -43,26 +44,7 @@ def independence():
 
 
 def ownership():
-    d  = F.build(); b = d[d.Side=="both"]
-    ps = (b.groupby(["player_id","year"])
-            .agg(main=("Agents", lambda s: s.mode().iat[0]),
-                 team=("Team",   lambda s: s.mode().iat[0]),
-                 maps=("Map","size")).reset_index())
-    ps = ps[ps.maps >= 20]
-    pool = b.groupby(["player_id","year"]).Agents.apply(lambda s: set(s.str.lower()))
-    ps = ps.merge(pool.rename("pool"), on=["player_id","year"])
-    ps["role"] = ps.main.str.lower().str.split(",").str[0].map(ROLE)
-
-    rows = []
-    for y in (2023, 2024, 2025):
-        a = ps[ps.year == y].set_index("player_id")
-        c = ps[ps.year == y+1].set_index("player_id")
-        for pid in a.index.intersection(c.index):
-            x, z = a.loc[pid], c.loc[pid]
-            j = len(x["pool"] & z["pool"]) / len(x["pool"] | z["pool"])
-            rows.append({"moved": x.team != z.team, "same_main": x["main"] == z["main"],
-                         "pool_overlap": j, "role": x.role, "same_role": x.role == z.role})
-    t = pd.DataFrame(rows)
+    t = ownership_pairs()
 
     rule("A. Did they keep the agent?", 66)
     g = t.groupby("moved").agg(n=("same_main","size"), same_main=("same_main","mean"),

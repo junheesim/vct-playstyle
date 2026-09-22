@@ -1,6 +1,6 @@
 """The one place the style space is fitted.
 
-Standardise, rotate, and fix the sign. That block appeared in four files with three
+Standardize, rotate, and fix the sign. That block appeared in four files with three
 different spellings, and the copy that read differently was the one carrying a bug:
 it flipped the loadings without flipping the scores, so the axis could have read one
 way in the loading table and the other way in every chart. Fitting through one
@@ -18,7 +18,7 @@ from sklearn.decomposition import PCA
 ANCHOR = "first_engagement"
 
 
-def standardise(df: pd.DataFrame, cols) -> pd.DataFrame:
+def standardize(df: pd.DataFrame, cols) -> pd.DataFrame:
     """Mean 0, sd 1 per column, so PCA weights structure and not units."""
     return (df[cols] - df[cols].mean()) / df[cols].std()
 

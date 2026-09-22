@@ -57,7 +57,7 @@ def player_ids() -> pd.DataFrame:
 LEAGUES = ("Americas", "EMEA", "Pacific", "China")
 
 # Renames, and one mislabel. vlr gives these the same franchise slot and a continuous
-# roster across the change, so they are one organisation for any "did the player
+# roster across the change, so they are one organization for any "did the player
 # change team?" question -- 10 of 417 year-over-year pairs read as roster moves
 # otherwise. `Mega Minors` is different in kind: it is not a rebrand but a wrong
 # label on NRG's Americas slot for 2025-26, confirmed by the slot, the roster
@@ -124,7 +124,7 @@ def _overview() -> tuple:
     assert df.region.notna().all(), "unresolved region: " + \
         str(sorted(df.loc[df.region.isna(), "Team"].unique())[:10])
 
-    # Canonical organisation, for continuity across a rename. `Team` stays as recorded
+    # Canonical organization, for continuity across a rename. `Team` stays as recorded
     # so a 2023 season is not shown under a name coined in 2025 -- except the one that
     # is simply wrong, which is corrected everywhere.
     df["org"] = df.Team.replace(TEAM_ALIAS)

@@ -17,6 +17,7 @@ Two things are deliberate:
 """
 import pandas as pd
 
+import data as D
 import features as F
 
 ROLE = {**{a: "duelist"    for a in ["jett","raze","reyna","phoenix","yoru","neon","iso","waylay"]},
@@ -68,7 +69,7 @@ def with_role(ps: pd.DataFrame, d: pd.DataFrame) -> pd.DataFrame:
     return ps.merge(ag, on=["player_id", "year"]).merge(lab, on=["player_id", "year"])
 
 
-# ---- how much of a season was actually spent in the labelled role ----
+# ---- how much of a season was actually spent in the labeled role ----
 
 
 def shares(d: pd.DataFrame = None, ps: pd.DataFrame = None) -> pd.DataFrame:
@@ -81,7 +82,7 @@ def shares(d: pd.DataFrame = None, ps: pd.DataFrame = None) -> pd.DataFrame:
     b = b[pd.MultiIndex.from_frame(b[["player_id", "year"]]).isin(keep)]
     # Denominator is ALL of the player's maps, not just the ones whose agent maps to
     # a role. A map on an agent outside the taxonomy (a new release, or a bad row) is
-    # not a map in the labelled role, so dropping it from the denominator OVERSTATES
+    # not a map in the labeled role, so dropping it from the denominator OVERSTATES
     # how much of the season was spent in role -- by up to 28% of a season, enough to
     # push four player-seasons over the 70% label guard they should fail.
     counts = (b.groupby(["player_id", "year"]).r.value_counts()
@@ -93,3 +94,55 @@ def shares(d: pd.DataFrame = None, ps: pd.DataFrame = None) -> pd.DataFrame:
         agent_share=("Agents", lambda s: s.value_counts(normalize=True).iat[0]),
         n_agents=("Agents", "nunique"))
     return ps.merge(sh, on=["player_id", "year"]).merge(lab, on=["player_id", "year"])
+
+
+# ---- does a player's agent travel with them? (decision 08) ----
+
+
+def ownership_pairs() -> pd.DataFrame:
+    """One row per year-over-year pair: did they move, and did they keep the agent?
+
+    Two corrections against the first version of this diagnostic, both of which the
+    rest of the project had already made and this file had not:
+
+      FLOOR. It filtered at 20 maps, the floor decision 13 retired. Everything else
+      in the repo is quoted at `D.MIN_MAPS`.
+
+      TEAM KEY. It keyed "did the player move?" on the DISPLAYED team name, so the
+      four franchises renamed mid-window (GIANTX, TALON, KIWOOM DRX, and NRG's
+      mislabelled slot) read as roster moves that never happened. `data.py` carries
+      `org` for exactly this, and decisions/07 already uses it; this did not.
+    """
+    d  = F.build(); b = d[d.Side=="both"]
+    ps = (b.groupby(["player_id","year"])
+            .agg(main=("Agents", lambda s: s.mode().iat[0]),
+                 org=("org",     lambda s: s.mode().iat[0]),
+                 maps=("Map","size")).reset_index())
+    ps = ps[ps.maps >= D.MIN_MAPS]
+    pool = b.groupby(["player_id","year"]).Agents.apply(lambda s: set(s.str.lower()))
+    ps = ps.merge(pool.rename("pool"), on=["player_id","year"])
+    # decision 16: the season's role is the modal ROLE across maps, not the role of
+    # the modal agent. `with_role` is the one place that is computed.
+    lab = with_role(F.seasons(d), d)[["player_id","year","role"]]
+    ps = ps.merge(lab, on=["player_id","year"], how="left")
+
+    rows = []
+    for y in (2023, 2024, 2025):
+        a = ps[ps.year == y].set_index("player_id")
+        c = ps[ps.year == y+1].set_index("player_id")
+        for pid in a.index.intersection(c.index):
+            x, z = a.loc[pid], c.loc[pid]
+            j = len(x["pool"] & z["pool"]) / len(x["pool"] | z["pool"])
+            rows.append({"moved": x.org != z.org, "same_main": x["main"] == z["main"],
+                         "pool_overlap": j, "role": x.role, "same_role": x.role == z.role})
+    return pd.DataFrame(rows)
+
+
+def agent_retention() -> tuple:
+    """(stayers, movers) share keeping their most-played agent.
+
+    The site quotes both. They live here, in the pipeline, because nothing may import
+    `diagnostics/` -- those modules print and are read beside a decision file. A number
+    the site states has to be computable without running a diagnostic by hand."""
+    g = ownership_pairs().groupby("moved").same_main.mean()
+    return float(g[False]), float(g[True])

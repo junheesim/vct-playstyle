@@ -53,7 +53,7 @@ function visible(d){
   return true;
 }
 // role averages use only players whose role label is solid (>=70% of maps in that
-// role). Part-time players labelled by their single most-played agent would otherwise
+// role). Part-time players labeled by their single most-played agent would otherwise
 // drag the average: 54 "duelists" fail that test and take 5.4 opening duels, against
 // 6.9 for the 149 who actually play the role.
 const avgOf=(r,f)=>{const v=DATA.filter(d=>d.r===r&&d.ok&&d[f]!=null).map(d=>d[f]);
@@ -111,7 +111,7 @@ function showDetail(d){
     "player-season against their role's average.</p>"); return;}
   const pill=d.r==="duelist"?'<span class="pill duel">duelist</span>':
              '<span class="pill nd">'+d.r+"</span>";
-  // The third column is signed, and deliberately NOT coloured: above the role average
+  // The third column is signed, and deliberately NOT colored: above the role average
   // is not "good" for deaths, so a red/green reading would assert something false.
   let rows='<div class="rows four"><span class="hd">season average</span>'+
            '<span class="hd v">player</span>'+
@@ -247,7 +247,7 @@ const views={Explore:["tabExplore","vExplore"],Report:["tabReport","vReport"]};
 const wrap=document.querySelector(".wrap");
 let CURRENT=null;
 
-function show(v){
+function show(v, keepHash){
   if(CURRENT===v) return;
   CURRENT = v;
   for(const k in views){
@@ -257,9 +257,13 @@ function show(v){
   }
   window.scrollTo({top:0,behavior:"instant"});
   try{localStorage.setItem("vct.view",v)}catch(e){}
-  // Keep the URL in step, so #report is a real link someone can send or bookmark.
-  const h = v==="Report" ? "#report" : "#explore";
-  if(location.hash!==h) history.replaceState(null,"",h);
+  // Keep the URL in step, so #report is a real link someone can send or bookmark --
+  // but not when we arrived via a section anchor, which is more specific and should
+  // survive the switch.
+  if(!keepHash){
+    const h = v==="Report" ? "#report" : "#explore";
+    if(location.hash!==h) history.replaceState(null,"",h);
+  }
   if(v==="Explore") draw();
 }
 
@@ -267,16 +271,40 @@ document.getElementById("tabExplore").onclick=()=>show("Explore");
 document.getElementById("tabReport").onclick=()=>show("Report");
 const te=document.getElementById("toExplore2");
 if(te)te.onclick=e=>{e.preventDefault();show("Explore")};
+// The report cross-references its own sections, so the hash has to mean more than
+// the two view names: it can also name a section, in which case we open the report
+// and scroll there. Anything unrecognised is left alone rather than bouncing the
+// reader to the explorer, which is what the previous two-way test did.
+const SECTIONS = new Set(
+  [...document.querySelectorAll("#vReport .sec[id]")].map(el => el.id));
+
+function viewFor(hash){
+  const id = (hash || "").replace(/^#/, "");
+  if(id === "explore") return "Explore";
+  if(id === "report" || SECTIONS.has(id)) return "Report";
+  return null;
+}
+
+function goTo(hash, smooth){
+  const v = viewFor(hash);
+  if(!v) return false;
+  show(v, SECTIONS.has(hash.replace(/^#/, "")));
+  const el = document.getElementById(hash.replace(/^#/, ""));
+  if(el && SECTIONS.has(el.id)){
+    // the panel may have just been unhidden, so let layout settle first
+    requestAnimationFrame(() =>
+      el.scrollIntoView({behavior: smooth ? "smooth" : "instant", block: "start"}));
+  }
+  return true;
+}
+
 // The hash wins if there is one -- a shared link should land where it says --
 // otherwise fall back to whichever view this reader saw last.
 let start="Explore";
 try{ if(localStorage.getItem("vct.view")==="Report")start="Report"; }catch(e){}
-if(location.hash==="#report")start="Report";
-if(location.hash==="#explore")start="Explore";
-addEventListener("hashchange",()=>{
-  const v = location.hash==="#report" ? "Report" : "Explore";
-  if(document.getElementById(views[v][1]).hidden) show(v);
-});
+if(viewFor(location.hash)) start = viewFor(location.hash);
+addEventListener("hashchange", () => goTo(location.hash, true));
 show(start);
+if(SECTIONS.has((location.hash||"").replace(/^#/,""))) goTo(location.hash, false);
 </script>
 

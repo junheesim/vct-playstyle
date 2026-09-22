@@ -5,7 +5,7 @@ player it describes. A model can find patterns that fit its own data and nothing
 
 Here the ENTIRE pipeline is fitted on 2023-2025 only:
     - the quality-adjustment coefficients (feature ~ kd_ratio)
-    - the standardisation (mean and sd of each residual)
+    - the standardization (mean and sd of each residual)
     - the PCA rotation
 2026 is then pushed through that fixed machinery cold. It contributes nothing to any
 fitted quantity, so it is genuinely out of sample.
